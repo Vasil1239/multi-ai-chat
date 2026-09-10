@@ -278,6 +278,47 @@ footer{
 footer a{color:var(--ink-soft)}
 footer a:hover{color:var(--ink)}
 
+/* Install instructions */
+.install-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:900px){.install-grid{grid-template-columns:1fr}}
+.install-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:26px;transition:.25s;
+}
+.install-card:hover{border-color:var(--line-strong)}
+.install-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.install-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:grid;place-items:center;flex-shrink:0;
+}
+.install-card h3{font-family:'Space Grotesk',sans-serif;font-size:17px;margin:0;font-weight:700}
+.install-steps{
+  list-style:none;padding:0;margin:0 0 16px;counter-reset:step;
+}
+.install-steps li{
+  padding:10px 0 10px 40px;border-bottom:1px solid var(--line);
+  position:relative;color:var(--ink-soft);font-size:14px;line-height:1.5;counter-increment:step;
+}
+.install-steps li:last-child{border-bottom:none;padding-bottom:2px}
+.install-steps li::before{
+  content:counter(step);position:absolute;left:0;top:10px;
+  width:26px;height:26px;border-radius:8px;background:var(--panel-2);
+  color:var(--ink);font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:13px;
+  display:grid;place-items:center;
+}
+.install-steps b{color:var(--ink);font-weight:600}
+.kbd{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:22px;height:22px;padding:0 6px;
+  background:var(--bg-soft);border:1px solid var(--line-strong);border-radius:6px;
+  font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--ink);
+  margin:0 2px;
+}
+.install-hint{
+  font-size:12.5px;color:var(--ink-mute);margin:0;padding-top:12px;
+  border-top:1px dashed var(--line);line-height:1.5;
+}
+
 /* Simple animations */
 .fade-in{opacity:0;transform:translateY(20px);animation:fadeIn .8s ease forwards}
 @keyframes fadeIn{to{opacity:1;transform:translateY(0)}}
@@ -356,11 +397,11 @@ footer a:hover{color:var(--ink)}
       <h3>Оплата за использование</h3>
       <p>Кредиты вместо подписок. Не используете — не платите. Пакеты от $5.</p>
     </div>
-    <div class="feat">
+    <a class="feat" href="#install">
       <div class="feat-icon">📱</div>
       <h3>Устанавливается на телефон</h3>
-      <p>Запускается как приложение с иконки на рабочем столе. Работает офлайн и мгновенно.</p>
-    </div>
+      <p>Запускается как приложение с иконки на рабочем столе. Работает офлайн и мгновенно. <span style="color:#c4b5ff;font-weight:600;">Как установить →</span></p>
+    </a>
     <div class="feat">
       <div class="feat-icon">🔒</div>
       <h3>Без регистрации</h3>
@@ -388,6 +429,63 @@ footer a:hover{color:var(--ink)}
         <li><div class="num">2</div><div><h4>Выберите режим: бесплатный или платный</h4><p>Одна кнопка. Бесплатный — 0₽. Платный — премиум-модели за кредиты.</p></div></li>
         <li><div class="num">3</div><div><h4>Пишите запрос — получаете ответ</h4><p>Система сама подбирает лучшую доступную модель под вопрос.</p></div></li>
       </ol>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL INSTRUCTIONS -->
+<section class="section" id="install">
+  <div class="section-title">
+    <h2>Установка на телефон</h2>
+    <p>AskHub можно поставить как приложение — с иконкой на рабочем столе и без адресной строки. Занимает меньше 1 МБ.</p>
+  </div>
+  <div class="install-grid">
+    <div class="install-card">
+      <div class="install-head">
+        <div class="install-icon" style="background:#000">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M17.6 13.3c0-2.6 2.1-3.9 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2.1-.9-3.4-.9-1.7 0-3.4 1-4.3 2.6-1.8 3.2-.5 7.9 1.3 10.5.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.5 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.2-2.6 1-1.5 1.4-3 1.4-3.1-.1 0-2.7-1-2.7-4.1zM15 4.6c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>
+        </div>
+        <h3>iPhone / iPad · Safari</h3>
+      </div>
+      <ol class="install-steps">
+        <li>Откройте <b>askhub.net</b> в Safari (не в Chrome и не в Telegram-браузере)</li>
+        <li>Нажмите кнопку <b>«Поделиться»</b> внизу экрана <span class="kbd">↑</span></li>
+        <li>Пролистайте меню и выберите <b>«На экран Домой»</b> <span class="kbd">＋</span></li>
+        <li>Нажмите <b>«Добавить»</b> в правом верхнем углу</li>
+      </ol>
+      <p class="install-hint">Иконка AskHub появится на главном экране. Запускается как обычное приложение — без адресной строки и вкладок.</p>
+    </div>
+
+    <div class="install-card">
+      <div class="install-head">
+        <div class="install-icon" style="background:#3ddc84">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M17.5 11.7c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1zm-11 0c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1zm11.4-6.1l2.2-3.8c.1-.2.1-.5-.2-.6-.2-.1-.5-.1-.6.2l-2.2 3.8c-1.7-.8-3.6-1.2-5.6-1.2s-3.9.4-5.6 1.2L3.7 1.4c-.1-.2-.4-.3-.6-.2-.2.1-.3.4-.2.6l2.2 3.8C1.3 7.6-.9 11-.9 15h25.7c0-4-2.2-7.4-6.9-9.4z"/></svg>
+        </div>
+        <h3>Android · Chrome</h3>
+      </div>
+      <ol class="install-steps">
+        <li>Откройте <b>askhub.net</b> в Chrome</li>
+        <li>Нажмите на плавающую кнопку <b>«📱 Установить на телефон»</b> внизу справа</li>
+        <li>Или откройте меню Chrome <span class="kbd">⋮</span> и выберите <b>«Установить приложение»</b></li>
+        <li>Подтвердите — иконка появится на рабочем столе</li>
+      </ol>
+      <p class="install-hint">Chrome может показать баннер «Добавить AskHub на главный экран» автоматически при повторном визите.</p>
+    </div>
+
+    <div class="install-card">
+      <div class="install-head">
+        <div class="install-icon" style="background:#0b0d17">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M4 4h16v4H4V4zm0 6h16v10H4V10zm2 2v6h12v-6H6zm1 1h10v1H7v-1z"/></svg>
+        </div>
+        <h3>Компьютер · Chrome / Edge</h3>
+      </div>
+      <ol class="install-steps">
+        <li>Откройте <b>askhub.net</b> в Chrome или Edge</li>
+        <li>Справа в адресной строке появится иконка <b>«Установить»</b> <span class="kbd">⊕</span></li>
+        <li>Нажмите её и подтвердите — AskHub появится в списке приложений и на панели задач</li>
+        <li>Запускается в отдельном окне без вкладок и адресной строки</li>
+      </ol>
+      <p class="install-hint">Работает на Windows, macOS и Linux — везде, где есть Chrome, Edge или Brave.</p>
     </div>
   </div>
 </section>
