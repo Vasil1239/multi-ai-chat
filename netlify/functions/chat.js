@@ -1,5 +1,33 @@
 const { getStore } = require('@netlify/blobs');
 
+// In-memory fallback store: используется если Netlify Blobs недоступен
+const _memStore = new Map();
+function memStore() {
+  return {
+    async get(key, opts) {
+      const v = _memStore.get(key);
+      if (v == null) return null;
+      return (opts && opts.type === 'json') ? v : JSON.stringify(v);
+    },
+    async setJSON(key, value) { _memStore.set(key, value); },
+    async set(key, value) { _memStore.set(key, value); },
+    async delete(key) { _memStore.delete(key); },
+    async list() { return { blobs: [...(_memStore.keys())].map(k => ({ key: k })) }; }
+  };
+}
+function openStore(name) {
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token  = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
+  try {
+    if (siteID && token) return getStore({ name, siteID, token, consistency: 'strong' });
+    return getStore(name);
+  } catch (e) {
+    console.warn('Blobs unavailable, using in-memory store:', e.message);
+    return memStore();
+  }
+}
+
+
 const FREE_STARTING_CREDITS = 20;
 const CREDIT_VALUE_USD = 0.01; // 1 кредит ~ 1 цент реальной стоимости в OpenRouter
 const MIN_CREDITS_PER_MESSAGE = 1; // минимум для любой платной модели, даже если токенов было мало
@@ -61,7 +89,7 @@ exports.handler = async function (event) {
     return { statusCode: 500, body: JSON.stringify({ error: 'OPENROUTER_API_KEY не настроен в Netlify' }) };
   }
 
-  const store = getStore('credits');
+  const store = openStore('credits');
   let record = await store.get(user, { type: 'json' });
   if (!record) {
     record = { credits: FREE_STARTING_CREDITS };
