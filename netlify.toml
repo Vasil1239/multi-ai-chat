@@ -13,6 +13,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/admin-credits"
+  to = "/.netlify/functions/admin-credits"
+  status = 200
+
+[[redirects]]
   from = "/api/models"
   to = "/.netlify/functions/models"
   status = 200
