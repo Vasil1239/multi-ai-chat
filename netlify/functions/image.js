@@ -1,16 +1,22 @@
 // Генерация изображений для AskHub.
-// Провайдеры (в порядке приоритета, автоматический fallback):
-//   1) OpenAI gpt-image-1  — если задан OPENAI_API_KEY (лучшее качество/текст)
-//   2) OpenRouter image-модель (google/gemini-2.5-flash-image, black-forest-labs/flux-1.1-pro и т.п.)
-//   3) Понятная человеческая ошибка, если ни один ключ не настроен.
-//
-// Ответ клиенту всегда JSON: { imageUrl?: string, imageB64?: string, error?: string, provider?: string, credits?: number }
-// Тарификация — единая ставка за одно изображение (см. IMAGE_CREDIT_COST). Free-режим отключён (картинки всегда платные).
+// Тарифная модель:
+//   quality:"standard" → OpenRouter google/gemini-2.5-flash-image, 50 кредитов
+//   quality:"hd"       → OpenAI    gpt-image-1,                    150 кредитов
+// Бесплатные картинки: 3/сутки только на стандарте и только в первые FREE_TRIAL_DAYS от регистрации.
+// HD никогда не бесплатен и никогда не идёт через Gemini.
 
 const { getCredits, saveCredits } = require('./_store');
 
-const IMAGE_CREDIT_COST = 50;      // 50 кредитов за картинку
-const FREE_IMAGES_PER_DAY = 5;     // 5 бесплатных картинок в сутки, не накапливаются
+const FREE_TRIAL_DAYS = 7;
+const FREE_IMAGES_PER_DAY = 3;
+const IMAGE_COST_STANDARD = 50;   // Gemini, себестоимость ~$0.005 → маржа 90%
+const IMAGE_COST_HD       = 150;  // OpenAI, себестоимость ~$0.04  → маржа 73%
+
+function isInFreeTrialWindow(record) {
+  if (!record || !record.created_at) return true;
+  const daysPassed = (Date.now() - new Date(record.created_at).getTime()) / (1000 * 60 * 60 * 24);
+  return daysPassed <= FREE_TRIAL_DAYS;
+}
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 function json(statusCode, payload) {
@@ -24,7 +30,7 @@ function checkAccessCode(event) {
   return provided === required;
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 45000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -34,10 +40,10 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 45000) {
   }
 }
 
-// -------- Провайдер 1: OpenAI gpt-image-1 --------
+// -------- OpenAI gpt-image-1 --------
 async function generateWithOpenAI({ prompt, size }) {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null; // не настроен — молча пропускаем
+  if (!apiKey) return null;
 
   const res = await fetchWithTimeout('https://api.openai.com/v1/images/generations', {
     method: 'POST',
@@ -51,7 +57,7 @@ async function generateWithOpenAI({ prompt, size }) {
       size: size || '1024x1024',
       n: 1,
     }),
-  }, 60000);
+  }, 90000);
 
   const raw = await res.text();
   let data;
@@ -68,8 +74,7 @@ async function generateWithOpenAI({ prompt, size }) {
   throw new Error('OpenAI: пустой ответ');
 }
 
-// -------- Провайдер 2: OpenRouter image-модели --------
-// Модели с генерацией картинок в OpenRouter: google/gemini-2.5-flash-image, black-forest-labs/flux-1.1-pro, etc.
+// -------- OpenRouter (Gemini image) --------
 async function generateWithOpenRouter({ prompt, model }) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
@@ -101,9 +106,7 @@ async function generateWithOpenRouter({ prompt, model }) {
     throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
 
-  // Форматов может быть несколько — вытаскиваем аккуратно:
   const msg = data?.choices?.[0]?.message;
-  // 1) массив images (OpenRouter стандарт для мульти-модальных)
   const imgArr = msg?.images;
   if (Array.isArray(imgArr) && imgArr.length) {
     const first = imgArr[0];
@@ -114,7 +117,6 @@ async function generateWithOpenRouter({ prompt, model }) {
     }
     if (typeof url === 'string') return { imageUrl: url, provider: `openrouter:${usedModel}` };
   }
-  // 2) content массив с image_url
   if (Array.isArray(msg?.content)) {
     for (const p of msg.content) {
       if (p?.type === 'image_url' && p.image_url?.url) {
@@ -134,26 +136,26 @@ exports.handler = async function (event) {
     try { body = JSON.parse(event.body || '{}'); }
     catch (_) { return json(400, { error: 'Некорректный JSON в запросе' }); }
 
-    const { user, prompt, size, model } = body;
+    const { user, prompt, size, model, quality } = body;
     if (!user || !prompt || typeof prompt !== 'string' || prompt.trim().length < 3) {
       return json(400, { error: 'Нужны user и prompt (минимум 3 символа)' });
     }
 
-    // Кредиты и бесплатный дневной лимит
+    const wantHD = quality === 'hd' || model === 'openai' || model === 'gpt-image-1';
+
     let record = await getCredits(user);
 
-    const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+    const todayKey = new Date().toISOString().slice(0, 10);
     if (!record.img_day || record.img_day !== todayKey) {
       record.img_day = todayKey;
       record.img_used_today = 0;
     }
-    // Бесплатные картинки — только в первые 7 дней от регистрации и только на Gemini (стандарт)
+
     const inTrial = isInFreeTrialWindow(record);
     const freeLeftToday = (inTrial && !wantHD)
       ? Math.max(0, FREE_IMAGES_PER_DAY - (record.img_used_today || 0))
       : 0;
     const useFree = freeLeftToday > 0;
-
     const costCredits = wantHD ? IMAGE_COST_HD : IMAGE_COST_STANDARD;
 
     if (!useFree && record.credits < costCredits) {
@@ -168,7 +170,6 @@ exports.handler = async function (event) {
       });
     }
 
-    // Маршрутизация: HD → только OpenAI, std → только Gemini (не жжём OpenAI на бесплатках)
     let result = null;
     const attempts = [];
     try {
@@ -180,12 +181,14 @@ exports.handler = async function (event) {
     if (!result) {
       const detail = attempts.length ? attempts.join(' | ') : 'провайдер не настроен';
       if (wantHD) {
-        return json(503, { error: 'hd_unavailable', message: 'HD недоступен: ' + detail + '. Добавьте OPENAI_API_KEY в Netlify.' });
+        return json(503, {
+          error: 'hd_unavailable',
+          message: 'HD недоступен: ' + detail + '. Добавьте OPENAI_API_KEY в Netlify.',
+        });
       }
       return json(500, { error: 'Не удалось сгенерировать изображение: ' + detail });
     }
 
-    // Списываем: сначала бесплатный лимит дня, потом — кредиты
     let creditsCharged = 0;
     let newCredits = record.credits;
     let newImgUsed = record.img_used_today || 0;
