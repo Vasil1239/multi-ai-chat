@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мульти — один чат, все модели</title>
+<meta name="description" content="Один чат — все модели ИИ. Переключайтесь между OpenAI, Anthropic, Google и другими моделями, или доверьте выбор автоподбору. Часть моделей бесплатно.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500&display=swap');
+
+:root {
+  --paper: #f6f6f3;
+  --ink: #1c2130;
+  --ink-soft: #565f73;
+  --line: #dcdcd4;
+  --accent: #34415c;
+  --accent-soft: #eceef2;
+  --good: #3e7a52;
+  --warn: #b0453f;
+  --bubble-user: #1c2130;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink); font-family: 'IBM Plex Sans', sans-serif; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 100px; }
+
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+h1 { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 27px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.sub { color: var(--ink-soft); font-size: 14px; margin: 0; max-width: 420px; }
+
+.credits-box { display: flex; align-items: center; gap: 10px; }
+.credits-pill {
+  font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 13.5px;
+  background: #fff; border: 1px solid var(--line); border-radius: 20px;
+  padding: 7px 14px; white-space: nowrap;
+}
+.topup-btn {
+  font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 13px;
+  background: var(--accent); color: #fff; border: none; border-radius: 20px;
+  padding: 8px 14px; cursor: pointer; white-space: nowrap;
+}
+
+.gate {
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  padding: 20px; margin-bottom: 20px;
+}
+.gate p { margin: 0 0 10px; font-size: 14.5px; color: var(--ink-soft); }
+.gate-row { display: flex; gap: 8px; }
+.gate-row input {
+  flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 14.5px;
+}
+.gate-row button {
+  font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 14px;
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
+  padding: 0 18px; cursor: pointer;
+}
+
+.model-picker { display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 16px; }
+.provider-pill {
+  display: flex; align-items: center; gap: 7px; padding: 8px 14px;
+  border: 1px solid var(--line); border-radius: 20px; background: #fff; cursor: pointer;
+  font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 13.5px; color: var(--ink-soft);
+  transition: border-color 0.15s, color 0.15s;
+}
+.provider-pill:hover { border-color: var(--accent); }
+.provider-pill.active { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+.provider-pill.special { border-style: dashed; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--accent); }
+
+.model-select-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.model-select {
+  flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: #fff; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; color: var(--ink);
+}
+.free-tag {
+  font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 11px;
+  color: var(--good); background: #eaf5ee; border-radius: 10px; padding: 3px 9px; white-space: nowrap;
+}
+
+.thread { display: flex; flex-direction: column; gap: 14px; margin: 18px 0 20px; }
+.msg { max-width: 82%; padding: 12px 16px; border-radius: 14px; line-height: 1.55; font-size: 15px; white-space: pre-wrap; }
+.msg.user { align-self: flex-end; background: var(--bubble-user); color: #fff; border-bottom-right-radius: 3px; }
+.msg.assistant { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-bottom-left-radius: 3px; }
+.msg.error { border-left-color: var(--warn); color: #7a2f2a; background: #fdf2f1; }
+.msg-model-tag { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 11px; color: var(--ink-soft); margin-bottom: 5px; display: block; }
+
+.empty-state { color: var(--ink-soft); font-size: 14.5px; padding: 6px 0 10px; }
+
+.composer { position: sticky; bottom: 20px; display: flex; gap: 8px; background: var(--paper); padding-top: 8px; }
+.composer textarea {
+  flex: 1; resize: none; min-height: 48px; max-height: 140px; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 10px; font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 15px; background: #fff; color: var(--ink);
+}
+.composer textarea:focus { outline: none; border-color: var(--accent); }
+.composer button {
+  font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 14px;
+  padding: 0 22px; border: none; border-radius: 10px; background: var(--accent); color: #fff; cursor: pointer;
+}
+.composer button:disabled { opacity: 0.4; cursor: default; }
+
+.typing { color: var(--ink-soft); font-size: 13.5px; font-style: italic; padding-left: 4px; }
+
+.topup-panel {
+  display: none; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px; margin-bottom: 16px; gap: 10px; flex-wrap: wrap;
+}
+.topup-panel.open { display: flex; }
+.pack-btn {
+  flex: 1; min-width: 150px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--paper); padding: 12px; cursor: pointer; text-align: left;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+.pack-btn:hover { border-color: var(--accent); }
+.pack-title { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 14.5px; }
+.pack-price { color: var(--ink-soft); font-size: 13px; margin-top: 2px; }
+
+.hint { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Мульти</h1>
+      <p class="sub">Один чат — все модели. Автоподбор, бесплатные варианты и переключение между лабораториями.</p>
+    </div>
+    <div class="credits-box" id="credits-box" style="display:none;">
+      <span class="credits-pill" id="credits-pill">— кредитов</span>
+      <button class="topup-btn" id="topup-toggle">Пополнить</button>
+    </div>
+  </header>
+
+  <div class="gate" id="access-gate" style="display:none;">
+    <p>Сайт защищён кодом доступа. Введите код, который вам дали.</p>
+    <div class="gate-row">
+      <input type="password" id="access-input" placeholder="Код доступа">
+      <button id="access-btn">Войти</button>
+    </div>
+  </div>
+
+  <div class="gate" id="gate">
+    <p>Укажите email — он используется как идентификатор для сохранения баланса кредитов между визитами (без пароля, это упрощённая идентификация).</p>
+    <div class="gate-row">
+      <input type="email" id="email-input" placeholder="you@example.com">
+      <button id="gate-btn">Начать</button>
+    </div>
+  </div>
+
+  <div class="topup-panel" id="topup-panel"></div>
+
+  <div id="app" style="display:none;">
+    <div class="model-picker" id="provider-picker"></div>
+    <div class="model-select-row">
+      <select class="model-select" id="model-select"></select>
+      <span class="free-tag" id="free-tag" style="display:none;">бесплатно</span>
+    </div>
+    <p class="hint">«Авто» сам классифицирует запрос и выбирает подходящую модель. «Бесплатные» — случайная модель из тех, что ничего не стоят, ограничены только скоростью запросов.</p>
+
+    <div class="thread" id="thread">
+      <p class="empty-state">Выберите модель и начните разговор.</p>
+    </div>
+
+    <div class="composer">
+      <textarea id="input" placeholder="Напишите сообщение…" rows="1"></textarea>
+      <button id="send">Отправить</button>
+    </div>
+  </div>
+
+  <p class="hint" style="margin-top:24px; text-align:center;"><a href="/legal.html" style="color:inherit;">Условия использования</a></p>
+</div>
+
+<script>
+(function() {
+  const SPECIAL_PROVIDERS = [
+    { id: 'special-auto', label: '🎯 Авто', models: [{ id: 'openrouter/auto', label: 'Автоподбор модели', free: false }] },
+    { id: 'special-free', label: '🆓 Бесплатные', models: [{ id: 'openrouter/free', label: 'Случайная бесплатная модель', free: true }] }
+  ];
+  const PACKS = [
+    { id: 'pack_s', label: '100 кредитов', price: '$5' },
+    { id: 'pack_m', label: '550 кредитов', price: '$20' },
+    { id: 'pack_l', label: '1500 кредитов', price: '$50' }
+  ];
+
+  let providers = [];
+  let activeProvider = null;
+  let activeModel = null;
+  let history = [];
+  let userEmail = null;
+  let credits = null;
+  let accessCode = localStorage.getItem('multi_access_code') || '';
+
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function accessHeaders(extra) {
+    const h = Object.assign({}, extra || {});
+    if (accessCode) h['X-Access-Code'] = accessCode;
+    return h;
+  }
+
+  async function loadModels() {
+    const res = await fetch('/api/models');
+    const data = await res.json();
+    const byProvider = {};
+    (data.models || []).forEach(m => {
+      if (!byProvider[m.provider]) byProvider[m.provider] = [];
+      byProvider[m.provider].push({ id: m.id, label: m.name, free: m.free });
+    });
+    const dynamic = Object.keys(byProvider).sort().map(p => ({
+      id: p, label: p.charAt(0).toUpperCase() + p.slice(1), models: byProvider[p]
+    }));
+    providers = [...SPECIAL_PROVIDERS, ...dynamic];
+    activeProvider = providers[0];
+    activeModel = activeProvider.models[0];
+    renderProviderPicker();
+    renderModelSelect();
+  }
+
+  function renderProviderPicker() {
+    const el = $('provider-picker');
+    el.innerHTML = '';
+    providers.forEach(p => {
+      const btn = document.createElement('button');
+      const special = p.id.startsWith('special-');
+      btn.className = 'provider-pill' + (p === activeProvider ? ' active' : '') + (special ? ' special' : '');
+      btn.innerHTML = (special ? '' : '<span class="dot"></span>') + p.label;
+      btn.onclick = () => {
+        activeProvider = p;
+        activeModel = p.models[0];
+        renderProviderPicker();
+        renderModelSelect();
+      };
+      el.appendChild(btn);
+    });
+  }
+
+  function renderModelSelect() {
+    const el = $('model-select');
+    el.innerHTML = '';
+    activeProvider.models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.label + (m.free ? ' · бесплатно' : '');
+      el.appendChild(opt);
+    });
+    el.value = activeModel.id;
+    el.onchange = () => {
+      activeModel = activeProvider.models.find(m => m.id === el.value);
+      $('free-tag').style.display = activeModel.free ? 'inline-block' : 'none';
+    };
+    $('free-tag').style.display = activeModel.free ? 'inline-block' : 'none';
+  }
+
+  function renderThread() {
+    const el = $('thread');
+    el.innerHTML = '';
+    if (!history.length) {
+      el.innerHTML = '<p class="empty-state">Выберите модель и начните разговор.</p>';
+      return;
+    }
+    history.forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'msg ' + m.role + (m.error ? ' error' : '');
+      if (m.role === 'assistant') {
+        div.innerHTML = `<span class="msg-model-tag">${esc(m.modelLabel)}</span>${esc(m.content)}`;
+      } else {
+        div.textContent = m.content;
+      }
+      el.appendChild(div);
+    });
+  }
+
+  async function refreshCredits() {
+    const res = await fetch('/api/credits?user=' + encodeURIComponent(userEmail), { headers: accessHeaders() });
+    if (res.status === 401) { showAccessGate(); return; }
+    const data = await res.json();
+    credits = data.credits;
+    $('credits-pill').textContent = credits + ' кредитов';
+  }
+
+  function renderTopupPanel() {
+    const el = $('topup-panel');
+    el.innerHTML = '';
+    PACKS.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'pack-btn';
+      btn.innerHTML = `<div class="pack-title">${p.label}</div><div class="pack-price">${p.price}</div>`;
+      btn.onclick = () => buyPack(p.id);
+      el.appendChild(btn);
+    });
+  }
+
+  async function buyPack(packId) {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: accessHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ user: userEmail, pack: packId })
+    });
+    if (res.status === 401) { showAccessGate(); return; }
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else alert('Не удалось создать оплату: ' + (data.error || 'неизвестная ошибка'));
+  }
+
+  async function send() {
+    const input = $('input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    history.push({ role: 'user', content: text });
+    input.value = '';
+    renderThread();
+    $('send').disabled = true;
+
+    const typing = document.createElement('p');
+    typing.className = 'typing';
+    typing.textContent = 'Модель отвечает…';
+    $('thread').appendChild(typing);
+
+    const apiMessages = history.filter(m => !m.error).map(m => ({ role: m.role, content: m.content }));
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: accessHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ user: userEmail, model: activeModel.id, messages: apiMessages })
+      });
+      const data = await res.json();
+
+      if (res.status === 401) {
+        showAccessGate();
+        history.pop(); // не оставляем "зависшее" сообщение без ответа
+      } else if (res.status === 402) {
+        history.push({ role: 'assistant', content: 'Кредиты закончились. Нажмите «Пополнить» вверху страницы, либо выберите бесплатную модель.', modelLabel: 'Система', error: true });
+      } else if (!res.ok) {
+        throw new Error(data.error || 'Ошибка запроса');
+      } else {
+        history.push({
+          role: 'assistant',
+          content: data.text || '(пустой ответ)',
+          modelLabel: (data.routedModel || activeModel.id) + (data.isFree ? ' · бесплатно' : '')
+        });
+        if (typeof data.credits === 'number') {
+          credits = data.credits;
+          $('credits-pill').textContent = credits + ' кредитов';
+        }
+      }
+    } catch (e) {
+      history.push({ role: 'assistant', content: 'Ошибка: ' + e.message, modelLabel: 'Система', error: true });
+    }
+
+    renderThread();
+    $('send').disabled = false;
+    input.focus();
+  }
+
+  async function startApp(email) {
+    userEmail = email;
+    localStorage.setItem('multi_user_email', email);
+    $('gate').style.display = 'none';
+    $('credits-box').style.display = 'flex';
+    $('app').style.display = 'block';
+    await refreshCredits();
+    await loadModels();
+  }
+
+  function showAccessGate() {
+    $('gate').style.display = 'none';
+    $('app').style.display = 'none';
+    $('credits-box').style.display = 'none';
+    $('access-gate').style.display = 'block';
+  }
+
+  $('access-btn').onclick = async () => {
+    const v = $('access-input').value.trim();
+    if (!v) return;
+    accessCode = v;
+    localStorage.setItem('multi_access_code', v);
+    $('access-gate').style.display = 'none';
+    await init();
+  };
+  $('access-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('access-btn').click(); });
+
+  async function init() {
+    // Пробный запрос, чтобы понять, требуется ли код доступа на этом сайте
+    const res = await fetch('/api/credits', { headers: accessHeaders() });
+    if (res.status === 401) { showAccessGate(); return; }
+
+    $('gate').style.display = 'block';
+    const savedEmail = localStorage.getItem('multi_user_email');
+    if (savedEmail) startApp(savedEmail);
+  }
+
+  $('gate-btn').onclick = () => {
+    const v = $('email-input').value.trim();
+    if (v) startApp(v);
+  };
+  $('email-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('gate-btn').click(); });
+
+  $('topup-toggle').onclick = () => {
+    $('topup-panel').classList.toggle('open');
+  };
+  renderTopupPanel();
+
+  $('send').onclick = send;
+  $('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+  $('input').addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 140) + 'px'; });
+
+  init();
+})();
+</script>
+</body>
+</html>

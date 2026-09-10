@@ -1,0 +1,23 @@
+[build]
+  functions = "netlify/functions"
+  publish = "public"
+
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
+
+[[redirects]]
+  from = "/api/models"
+  to = "/.netlify/functions/models"
+  status = 200
+
+[[redirects]]
+  from = "/api/credits"
+  to = "/.netlify/functions/credits"
+  status = 200
+
+[[redirects]]
+  from = "/api/checkout"
+  to = "/.netlify/functions/create-checkout"
+  status = 200

@@ -1,0 +1,9 @@
+{
+  "name": "multi-ai-chat",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0",
+    "stripe": "^17.3.0"
+  }
+}
