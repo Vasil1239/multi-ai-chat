@@ -36,3 +36,8 @@
   from = "/api/plus-webhook"
   to = "/.netlify/functions/plus-webhook"
   status = 200
+
+[[redirects]]
+  from = "/api/plus-bot"
+  to = "/.netlify/functions/plus-bot"
+  status = 200
