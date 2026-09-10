@@ -57,10 +57,30 @@ exports.handler = async function (event) {
       const res = await tg('setMyCommands', {
         commands: [
           { command: 'start',  description: 'Начать оформление AskHub Plus' },
-          { command: 'status', description: 'Проверить статус подписки' }
+          { command: 'status', description: 'Проверить статус подписки' },
+          { command: 'help',   description: 'Как это работает' }
         ]
       });
       return json(200, res);
+    }
+    if (action === 'setName') {
+      return json(200, await tg('setMyName', { name: 'AskHub Plus' }));
+    }
+    if (action === 'setDescription') {
+      return json(200, await tg('setMyDescription', {
+        description:
+          'Подписка AskHub Plus. История чатов, поиск, снятие лимита сессии и +5000 кредитов/мес. Оплата — Telegram Stars.'
+      }));
+    }
+    if (action === 'setShortDescription') {
+      return json(200, await tg('setMyShortDescription', {
+        short_description: 'Оформить AskHub Plus за Telegram Stars'
+      }));
+    }
+    if (action === 'sendTestMessage') {
+      const chatId = q.chat_id;
+      if (!chatId) return json(400, { error: 'chat_id_required' });
+      return json(200, await tg('sendMessage', { chat_id: Number(chatId), text: 'ping from admin endpoint ✅' }));
     }
     return json(400, { error: 'unknown_action', action });
   } catch (e) {

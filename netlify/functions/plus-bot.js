@@ -79,8 +79,8 @@ async function activatePlus({ email, plan, telegramUserId, chargeId, linkToken }
 }
 
 function priceStars(plan) {
-  if (plan === 'yearly') return Number(process.env.PLUS_PRICE_YEARLY_STARS || 2000);
-  return Number(process.env.PLUS_PRICE_MONTHLY_STARS || 200);
+  if (plan === 'yearly') return Number(process.env.PLUS_PRICE_YEARLY_STARS || 2500);
+  return Number(process.env.PLUS_PRICE_MONTHLY_STARS || 250);
 }
 
 function planLabel(plan) {
@@ -166,6 +166,25 @@ async function handleMessage(msg) {
   if (text.startsWith('/start')) {
     const args = text.slice(6).trim();
     await handleStart(chat, args);
+    return;
+  }
+
+  if (text === '/help') {
+    await tg('sendMessage', {
+      chat_id: chat.id,
+      text:
+        'AskHub Plus — подписка на askhub.net.\n\n' +
+        '• История всех чатов и поиск по ним\n' +
+        '• Боковая панель проектов без лимита\n' +
+        '• Без лимита 100 сообщений в сессии\n' +
+        '• +5000 кредитов каждый месяц\n\n' +
+        'Как оформить:\n' +
+        '1. /start — начнём\n' +
+        '2. Отправьте email, которым пользуетесь на сайте\n' +
+        '3. Выберите месяц (250⭐ ≈ $4.99) или год (2500⭐ ≈ $49.99)\n' +
+        '4. Оплатите Stars — Plus включится мгновенно\n\n' +
+        '/status — проверить срок подписки.'
+    });
     return;
   }
 
