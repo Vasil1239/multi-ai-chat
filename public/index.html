@@ -564,7 +564,7 @@ footer a:hover{color:var(--ink)}
   const MODE_HINTS={
     free:'Бесплатный режим: без списаний, любая доступная free-модель.',
     paid:'Премиум-режим: система выбирает лучшую модель под ваш запрос. Списывается по кредитам.',
-    image:'Режим генерации картинок. Опишите изображение по-русски или по-английски — 50 кредитов за штуку.'
+    image:'Режим генерации картинок. 5 картинок в день — бесплатно (не накапливаются), далее 50 кредитов за штуку.'
   };
 
   // Эвристика: похоже ли сообщение на просьбу нарисовать/сгенерировать картинку
@@ -690,7 +690,8 @@ footer a:hover{color:var(--ink)}
         else{
           const src = d.imageB64 ? ('data:image/png;base64,'+d.imageB64) : d.imageUrl;
           if(!src) throw new Error('Провайдер не вернул изображение');
-          history.push({role:'assistant',content:'',imageSrc:src,modelLabel:(d.provider||'image')+' · −'+(d.creditsCharged||50)+' кредитов'});
+          const priceTag = d.usedFreeToday ? ' · бесплатная картинка дня' : (' · −'+(d.creditsCharged||50)+' кредитов');
+          history.push({role:'assistant',content:'',imageSrc:src,modelLabel:(d.provider||'image')+priceTag});
           if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
         }
       } else {

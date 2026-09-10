@@ -10,7 +10,8 @@
 const { getStore } = require('@netlify/blobs');
 
 const IMAGE_CREDIT_COST = 50; // 50 кредитов за одну картинку (~$0.005 маржа при $0.001 = 1 кредит)
-const FREE_STARTING_CREDITS = 20;
+const FREE_STARTING_CREDITS = 100; // стартовый бонус нового пользователя
+const FREE_IMAGES_PER_DAY = 5;     // сколько бесплатных картинок в сутки на пользователя (не накапливаются)
 
 const _memStore = new Map();
 function memStore() {
@@ -161,13 +162,27 @@ exports.handler = async function (event) {
       return json(400, { error: 'Нужны user и prompt (минимум 3 символа)' });
     }
 
-    // Кредиты
+    // Кредиты и бесплатный дневной лимит
     const store = openStore('credits');
     let record = await store.get(user, { type: 'json' });
     if (!record) { record = { credits: FREE_STARTING_CREDITS }; await store.setJSON(user, record); }
 
-    if (record.credits < IMAGE_CREDIT_COST) {
-      return json(402, { error: 'insufficient_credits', credits: record.credits, needed: IMAGE_CREDIT_COST });
+    const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+    if (!record.imgDay || record.imgDay !== todayKey) {
+      record.imgDay = todayKey;
+      record.imgUsedToday = 0;
+    }
+    const freeLeftToday = Math.max(0, FREE_IMAGES_PER_DAY - (record.imgUsedToday || 0));
+    const useFree = freeLeftToday > 0;
+
+    if (!useFree && record.credits < IMAGE_CREDIT_COST) {
+      return json(402, {
+        error: 'insufficient_credits',
+        credits: record.credits,
+        needed: IMAGE_CREDIT_COST,
+        freeLeftToday: 0,
+        message: 'Дневной бесплатный лимит на изображения исчерпан. Пополните баланс.'
+      });
     }
 
     // Пробуем провайдеров по очереди
@@ -193,14 +208,22 @@ exports.handler = async function (event) {
       });
     }
 
-    // Списываем кредиты только при успехе
-    record.credits -= IMAGE_CREDIT_COST;
+    // Списываем: сначала бесплатный лимит дня, потом — кредиты
+    let creditsCharged = 0;
+    if (useFree) {
+      record.imgUsedToday = (record.imgUsedToday || 0) + 1;
+    } else {
+      record.credits -= IMAGE_CREDIT_COST;
+      creditsCharged = IMAGE_CREDIT_COST;
+    }
     await store.setJSON(user, record);
 
     return json(200, {
       ...result,
       credits: record.credits,
-      creditsCharged: IMAGE_CREDIT_COST,
+      creditsCharged,
+      usedFreeToday: useFree,
+      freeLeftToday: Math.max(0, FREE_IMAGES_PER_DAY - (record.imgUsedToday || 0)),
     });
   } catch (e) {
     console.error('image.js unhandled:', e);

@@ -27,7 +27,7 @@ function openStore(name) {
   }
 }
 
-const FREE_STARTING_CREDITS = 20;
+const FREE_STARTING_CREDITS = 100;
 
 function checkAccessCode(event) {
   const required = process.env.SITE_ACCESS_CODE;
