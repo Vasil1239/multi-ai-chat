@@ -170,8 +170,22 @@ function checkAccessCode(event) {
   return provided === required;
 }
 
+// BETA: unconditional free access for everyone.
+// Enabled with BETA_FREE_ACCESS=1 (or 'true'/'yes').
+// While ON: every user is treated as Plus (unlimited chat history,
+// no per-session message cap, no credit charge on paid models).
+// Turn it off by removing the env var or setting it to 0.
+function isBetaFreeAccess() {
+  const v = String(process.env.BETA_FREE_ACCESS || '').toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
 // Plus status: reads from 'plus' store, key = user email
 async function getPlusStatus(user) {
+  if (isBetaFreeAccess()) {
+    const until = new Date(Date.now() + 365 * 86400000).toISOString();
+    return { plus: true, plus_until: until, beta: true };
+  }
   const store = openStore('plus');
   const rec = await store.get(user, { type: 'json' });
   if (!rec || !rec.plus_until) return { plus: false, plus_until: null };
@@ -190,6 +204,6 @@ function emailToken(email, salt) {
 const SESSION_MSG_LIMIT_FREE = 100;
 
 module.exports = {
-  openStore, checkAccessCode, getPlusStatus, emailToken,
+  openStore, checkAccessCode, getPlusStatus, emailToken, isBetaFreeAccess,
   SESSION_MSG_LIMIT_FREE
 };

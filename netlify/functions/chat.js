@@ -1,5 +1,22 @@
 const { getStore } = require('@netlify/blobs');
-const { getPlusStatus, SESSION_MSG_LIMIT_FREE } = require('./_shared');
+const { getPlusStatus, SESSION_MSG_LIMIT_FREE, isBetaFreeAccess } = require('./_shared');
+
+// Reliable free-tier fallbacks on OpenRouter. Order matters — first working wins.
+// 'openrouter/free' is NOT a real model id, only a placeholder used by the UI.
+const FREE_MODEL_FALLBACKS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'google/gemini-2.0-flash-exp:free',
+  'mistralai/mistral-7b-instruct:free',
+  'qwen/qwen-2.5-7b-instruct:free'
+];
+
+function pickFreeModel(free) {
+  for (const id of FREE_MODEL_FALLBACKS) if (free.has(id)) return id;
+  // Last resort: any :free model from catalog.
+  for (const id of free) if (typeof id === 'string' && id.endsWith(':free')) return id;
+  return FREE_MODEL_FALLBACKS[0];
+}
 
 // In-memory fallback store: используется если Netlify Blobs недоступен
 const _memStore = new Map();
@@ -96,10 +113,11 @@ exports.handler = async function (event) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Некорректный JSON' }) };
   }
 
-  const { user, model, messages } = body;
-  if (!user || !model || !Array.isArray(messages)) {
+  const { user, model: requestedModel, messages } = body;
+  if (!user || !requestedModel || !Array.isArray(messages)) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Нужны user, model и messages' }) };
   }
+  let model = requestedModel;
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -114,7 +132,12 @@ exports.handler = async function (event) {
   }
 
   const { free, pricing } = await getCatalog();
-  const isFree = free.has(model);
+
+  // Resolve the placeholder 'openrouter/free' → a real working free model.
+  if (model === 'openrouter/free') {
+    model = pickFreeModel(free);
+  }
+  const isFree = free.has(model) || model.endsWith(':free');
 
   // Предварительная проверка: не пускаем с нулевым/отрицательным балансом на платную модель.
   // Точная стоимость (которая может быть чуть выше 1 кредита для дорогих моделей) спишется после ответа.
@@ -143,7 +166,7 @@ exports.handler = async function (event) {
     }
 
     let creditsCharged = 0;
-    if (!isFree) {
+    if (!isFree && !isBetaFreeAccess()) {
       const routedId = data.model || model;
       const price = pricing.get(routedId) || pricing.get(model) || { prompt: 0, completion: 0 };
       const usage = data.usage || {};

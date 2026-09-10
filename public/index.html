@@ -807,7 +807,9 @@ footer a:hover{color:var(--ink)}
     try{
       const headers=accessHeaders({'Content-Type':'application/json','X-Session-Msg-Count':String(sessionCount)});
       const r=await fetch('/api/chat',{method:'POST',headers,body:JSON.stringify({user:userEmail,model:activeModel.id,messages:apiMessages})});
-      const d=await r.json();
+      const raw=await r.text();
+      let d={};
+      try{d=raw?JSON.parse(raw):{}}catch(_){d={error:'Сервер вернул не-JSON ответ (возможно, функция недоступна). Попробуйте ещё раз.'}}
       if(r.status===401){showAccessGate();history.pop()}
       else if(r.status===402){history.push({role:'assistant',content:'Кредиты закончились. Пополните баланс или переключитесь на бесплатный режим.',modelLabel:'Система',error:true})}
       else if(r.status===429){history.pop();showLimitModal();return}
