@@ -8,6 +8,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/image"
+  to = "/.netlify/functions/image"
+  status = 200
+
+[[redirects]]
   from = "/api/models"
   to = "/.netlify/functions/models"
   status = 200

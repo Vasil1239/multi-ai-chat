@@ -516,6 +516,7 @@ footer a:hover{color:var(--ink)}
     <div class="mode-toggle">
       <button class="mode-btn active" data-mode="free" id="mode-free">🆓 Бесплатный режим</button>
       <button class="mode-btn" data-mode="paid" id="mode-paid">⚡ Премиум-модели</button>
+      <button class="mode-btn" data-mode="image" id="mode-image">🎨 Изображение</button>
     </div>
     <p class="mode-hint" id="mode-hint">Бесплатный режим: без списаний, любая доступная free-модель.</p>
 
@@ -557,12 +558,17 @@ footer a:hover{color:var(--ink)}
   ];
   const MODE_MODEL={
     free:{id:'openrouter/free',label:'Бесплатная модель',free:true},
-    paid:{id:'openrouter/auto',label:'Авто (лучшая под запрос)',free:false}
+    paid:{id:'openrouter/auto',label:'Авто (лучшая под запрос)',free:false},
+    image:{id:'google/gemini-2.5-flash-image',label:'Генератор изображений',free:false}
   };
   const MODE_HINTS={
     free:'Бесплатный режим: без списаний, любая доступная free-модель.',
-    paid:'Премиум-режим: система выбирает лучшую модель под ваш запрос. Списывается по кредитам.'
+    paid:'Премиум-режим: система выбирает лучшую модель под ваш запрос. Списывается по кредитам.',
+    image:'Режим генерации картинок. Опишите изображение по-русски или по-английски — 50 кредитов за штуку.'
   };
+
+  // Эвристика: похоже ли сообщение на просьбу нарисовать/сгенерировать картинку
+  const IMAGE_HINTS=/(нарису|сгенериру[йи]|сдела[йи]\s+(фото|картинк|изображени|постер|баннер|логотип|инфографик)|drawing|generate\s+(image|photo|picture)|нужн[аоыя]?\s+картинк|создай\s+изображ|нарисова)/i;
 
   let mode='free';
   let activeModel=MODE_MODEL.free;
@@ -579,10 +585,15 @@ footer a:hover{color:var(--ink)}
     mode=m;activeModel=MODE_MODEL[m];
     $('mode-free').classList.toggle('active',m==='free');
     $('mode-paid').classList.toggle('active',m==='paid');
+    $('mode-image').classList.toggle('active',m==='image');
     $('mode-hint').textContent=MODE_HINTS[m];
+    $('input').placeholder = m==='image'
+      ? 'Опишите картинку: «Инфографика о строительстве дома из газобетона, плоская векторная иллюстрация, синие и оранжевые акценты…»'
+      : 'Спросите что угодно…';
   }
   $('mode-free').onclick=()=>setMode('free');
   $('mode-paid').onclick=()=>setMode('paid');
+  $('mode-image').onclick=()=>setMode('image');
 
   function renderThread(){
     const el=$('thread');el.innerHTML='';
@@ -590,8 +601,18 @@ footer a:hover{color:var(--ink)}
     history.forEach(m=>{
       const d=document.createElement('div');
       d.className='msg '+m.role+(m.error?' error':'');
-      if(m.role==='assistant')d.innerHTML=`<span class="msg-model-tag">${esc(m.modelLabel)}</span>${esc(m.content)}`;
-      else d.textContent=m.content;
+      if(m.role==='assistant'){
+        let inner = `<span class="msg-model-tag">${esc(m.modelLabel)}</span>`;
+        if(m.imageSrc){
+          inner += `<img src="${m.imageSrc}" alt="generated" style="max-width:100%;border-radius:14px;margin-top:6px;display:block"/>`;
+          if(m.content) inner += `<div style="margin-top:8px">${esc(m.content)}</div>`;
+          const dl = m.imageSrc.startsWith('data:') ? m.imageSrc : m.imageSrc;
+          inner += `<div style="margin-top:8px"><a href="${dl}" download="askhub-image.png" style="color:var(--accent);font-size:13px">Скачать изображение</a></div>`;
+        } else {
+          inner += esc(m.content);
+        }
+        d.innerHTML = inner;
+      } else d.textContent=m.content;
       el.appendChild(d);
     });
     el.scrollTop=el.scrollHeight;
@@ -639,20 +660,51 @@ footer a:hover{color:var(--ink)}
 
   async function send(){
     const t=$('input').value.trim();if(!t)return;
+
+    // Автопредложение: если пользователь просит картинку в текстовом режиме — подскажем
+    if(mode!=='image' && IMAGE_HINTS.test(t)){
+      if(confirm('Похоже, вы хотите сгенерировать изображение. Переключить в режим «🎨 Изображение»?')){
+        setMode('image');
+      }
+    }
+
     history.push({role:'user',content:t});$('input').value='';
     $('input').style.height='auto';
     renderThread();$('send').disabled=true;
-    const typing=document.createElement('p');typing.className='typing';typing.textContent='Модель отвечает…';$('thread').appendChild(typing);
-    const apiMessages=history.filter(m=>!m.error).map(m=>({role:m.role,content:m.content}));
+    const typing=document.createElement('p');typing.className='typing';
+    typing.textContent = mode==='image' ? 'Генерирую изображение (10–40 сек)…' : 'Модель отвечает…';
+    $('thread').appendChild(typing);
+
     try{
-      const r=await fetch('/api/chat',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,model:activeModel.id,messages:apiMessages})});
-      const d=await readJsonSafe(r);
-      if(r.status===401){showAccessGate();history.pop()}
-      else if(r.status===402){history.push({role:'assistant',content:'Кредиты закончились. Пополните баланс или переключитесь на бесплатный режим.',modelLabel:'Система',error:true})}
-      else if(!r.ok){throw new Error(d.error||('Ошибка HTTP '+r.status))}
-      else{
-        history.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel:(d.routedModel||activeModel.label)+(d.isFree?' · бесплатно':'')});
-        if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
+      if(mode==='image'){
+        // Генерация картинки
+        const r=await fetch('/api/image',{
+          method:'POST',
+          headers:accessHeaders({'Content-Type':'application/json'}),
+          body:JSON.stringify({user:userEmail,prompt:t,model:activeModel.id})
+        });
+        const d=await readJsonSafe(r);
+        if(r.status===401){showAccessGate();history.pop()}
+        else if(r.status===402){history.push({role:'assistant',content:'Кредиты закончились. На картинку нужно '+(d.needed||50)+' кредитов. Пополните баланс.',modelLabel:'Система',error:true})}
+        else if(!r.ok){throw new Error(d.error||('Ошибка HTTP '+r.status))}
+        else{
+          const src = d.imageB64 ? ('data:image/png;base64,'+d.imageB64) : d.imageUrl;
+          if(!src) throw new Error('Провайдер не вернул изображение');
+          history.push({role:'assistant',content:'',imageSrc:src,modelLabel:(d.provider||'image')+' · −'+(d.creditsCharged||50)+' кредитов'});
+          if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
+        }
+      } else {
+        // Обычный текстовый чат
+        const apiMessages=history.filter(m=>!m.error && !m.imageSrc).map(m=>({role:m.role,content:m.content}));
+        const r=await fetch('/api/chat',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,model:activeModel.id,messages:apiMessages})});
+        const d=await readJsonSafe(r);
+        if(r.status===401){showAccessGate();history.pop()}
+        else if(r.status===402){history.push({role:'assistant',content:'Кредиты закончились. Пополните баланс или переключитесь на бесплатный режим.',modelLabel:'Система',error:true})}
+        else if(!r.ok){throw new Error(d.error||('Ошибка HTTP '+r.status))}
+        else{
+          history.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel:(d.routedModel||activeModel.label)+(d.isFree?' · бесплатно':'')});
+          if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
+        }
       }
     }catch(e){history.push({role:'assistant',content:'Ошибка: '+(e&&e.message?e.message:'неизвестно'),modelLabel:'Система',error:true})}
     renderThread();$('send').disabled=false;$('input').focus();
