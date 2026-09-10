@@ -1,34 +1,5 @@
-const { getStore } = require('@netlify/blobs');
+const { getCredits, saveCredits } = require('./_store');
 
-// In-memory fallback store: используется если Netlify Blobs недоступен
-const _memStore = new Map();
-function memStore() {
-  return {
-    async get(key, opts) {
-      const v = _memStore.get(key);
-      if (v == null) return null;
-      return (opts && opts.type === 'json') ? v : JSON.stringify(v);
-    },
-    async setJSON(key, value) { _memStore.set(key, value); },
-    async set(key, value) { _memStore.set(key, value); },
-    async delete(key) { _memStore.delete(key); },
-    async list() { return { blobs: [...(_memStore.keys())].map(k => ({ key: k })) }; }
-  };
-}
-function openStore(name) {
-  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-  const token  = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
-  try {
-    if (siteID && token) return getStore({ name, siteID, token, consistency: 'strong' });
-    return getStore(name);
-  } catch (e) {
-    console.warn('Blobs unavailable, using in-memory store:', e.message);
-    return memStore();
-  }
-}
-
-
-const FREE_STARTING_CREDITS = 100;
 const CREDIT_VALUE_USD = 0.0001; // 1 кредит = $0.0001 реальной стоимости OpenRouter. Пользователь покупает кредит за $0.001 → маржа ×10
 const MIN_CREDITS_PER_MESSAGE = 1; // минимум для любой платной модели, даже если токенов было мало
 
@@ -137,12 +108,7 @@ exports.handler = async function (event) {
       return json(500, { error: 'OPENROUTER_API_KEY не настроен в Netlify' });
     }
 
-    const store = openStore('credits');
-    let record = await store.get(user, { type: 'json' });
-    if (!record) {
-      record = { credits: FREE_STARTING_CREDITS };
-      await store.setJSON(user, record);
-    }
+    let record = await getCredits(user);
 
     // Каталог моделей — не критичен: если OpenRouter отвалился, считаем модель бесплатной
     // только если id заканчивается на ":free", иначе не блокируем запрос.
@@ -199,8 +165,7 @@ exports.handler = async function (event) {
         (usage.prompt_tokens || 0) * price.prompt +
         (usage.completion_tokens || 0) * price.completion;
       creditsCharged = Math.max(MIN_CREDITS_PER_MESSAGE, Math.ceil(costUsd / CREDIT_VALUE_USD));
-      record.credits -= creditsCharged;
-      await store.setJSON(user, record);
+      record = await saveCredits(user, { credits: record.credits - creditsCharged });
     }
 
     const text = data.choices?.[0]?.message?.content || '';

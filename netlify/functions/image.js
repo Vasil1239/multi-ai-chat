@@ -7,33 +7,10 @@
 // Ответ клиенту всегда JSON: { imageUrl?: string, imageB64?: string, error?: string, provider?: string, credits?: number }
 // Тарификация — единая ставка за одно изображение (см. IMAGE_CREDIT_COST). Free-режим отключён (картинки всегда платные).
 
-const { getStore } = require('@netlify/blobs');
+const { getCredits, saveCredits } = require('./_store');
 
-const IMAGE_CREDIT_COST = 50; // 50 кредитов за одну картинку (~$0.005 маржа при $0.001 = 1 кредит)
-const FREE_STARTING_CREDITS = 100; // стартовый бонус нового пользователя
-const FREE_IMAGES_PER_DAY = 5;     // сколько бесплатных картинок в сутки на пользователя (не накапливаются)
-
-const _memStore = new Map();
-function memStore() {
-  return {
-    async get(key, opts) {
-      const v = _memStore.get(key);
-      if (v == null) return null;
-      return (opts && opts.type === 'json') ? v : JSON.stringify(v);
-    },
-    async setJSON(key, value) { _memStore.set(key, value); },
-  };
-}
-function openStore(name) {
-  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-  const token  = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
-  try {
-    if (siteID && token) return getStore({ name, siteID, token, consistency: 'strong' });
-    return getStore(name);
-  } catch (_) {
-    return memStore();
-  }
-}
+const IMAGE_CREDIT_COST = 50;      // 50 кредитов за картинку
+const FREE_IMAGES_PER_DAY = 5;     // 5 бесплатных картинок в сутки, не накапливаются
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
 function json(statusCode, payload) {
@@ -163,16 +140,14 @@ exports.handler = async function (event) {
     }
 
     // Кредиты и бесплатный дневной лимит
-    const store = openStore('credits');
-    let record = await store.get(user, { type: 'json' });
-    if (!record) { record = { credits: FREE_STARTING_CREDITS }; await store.setJSON(user, record); }
+    let record = await getCredits(user);
 
     const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-    if (!record.imgDay || record.imgDay !== todayKey) {
-      record.imgDay = todayKey;
-      record.imgUsedToday = 0;
+    if (!record.img_day || record.img_day !== todayKey) {
+      record.img_day = todayKey;
+      record.img_used_today = 0;
     }
-    const freeLeftToday = Math.max(0, FREE_IMAGES_PER_DAY - (record.imgUsedToday || 0));
+    const freeLeftToday = Math.max(0, FREE_IMAGES_PER_DAY - (record.img_used_today || 0));
     const useFree = freeLeftToday > 0;
 
     if (!useFree && record.credits < IMAGE_CREDIT_COST) {
@@ -210,20 +185,26 @@ exports.handler = async function (event) {
 
     // Списываем: сначала бесплатный лимит дня, потом — кредиты
     let creditsCharged = 0;
+    let newCredits = record.credits;
+    let newImgUsed = record.img_used_today || 0;
     if (useFree) {
-      record.imgUsedToday = (record.imgUsedToday || 0) + 1;
+      newImgUsed += 1;
     } else {
-      record.credits -= IMAGE_CREDIT_COST;
+      newCredits -= IMAGE_CREDIT_COST;
       creditsCharged = IMAGE_CREDIT_COST;
     }
-    await store.setJSON(user, record);
+    const saved = await saveCredits(user, {
+      credits: newCredits,
+      img_day: todayKey,
+      img_used_today: newImgUsed,
+    });
 
     return json(200, {
       ...result,
-      credits: record.credits,
+      credits: saved.credits,
       creditsCharged,
       usedFreeToday: useFree,
-      freeLeftToday: Math.max(0, FREE_IMAGES_PER_DAY - (record.imgUsedToday || 0)),
+      freeLeftToday: Math.max(0, FREE_IMAGES_PER_DAY - newImgUsed),
     });
   } catch (e) {
     console.error('image.js unhandled:', e);
