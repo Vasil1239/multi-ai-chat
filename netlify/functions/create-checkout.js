@@ -1,9 +1,11 @@
 const Stripe = require('stripe');
 
+// Наценка: 1 кредит = $0.001 для покупателя (в 10 раз дороже реальной себестоимости OpenRouter).
+// amount указан в центах для Stripe.
 const PACKS = {
-  pack_s: { credits: 100, amount: 500, label: '100 кредитов' },   // $5
-  pack_m: { credits: 550, amount: 2000, label: '550 кредитов' },  // $20 (бонус за объём)
-  pack_l: { credits: 1500, amount: 5000, label: '1500 кредитов' } // $50
+  pack_s: { credits: 5000,  amount: 500,  label: '5 000 кредитов' },    // $5   (base)
+  pack_m: { credits: 22000, amount: 2000, label: '22 000 кредитов' },   // $20  (+10% бонус)
+  pack_l: { credits: 60000, amount: 5000, label: '60 000 кредитов' }    // $50  (+20% бонус)
 };
 
 function checkAccessCode(event) {

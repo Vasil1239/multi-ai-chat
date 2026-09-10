@@ -177,9 +177,9 @@ h1 { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 27px; marg
     { id: 'special-free', label: '🆓 Бесплатные', models: [{ id: 'openrouter/free', label: 'Случайная бесплатная модель', free: true }] }
   ];
   const PACKS = [
-    { id: 'pack_s', label: '100 кредитов', price: '$5' },
-    { id: 'pack_m', label: '550 кредитов', price: '$20' },
-    { id: 'pack_l', label: '1500 кредитов', price: '$50' }
+    { id: 'pack_s', label: '5 000 кредитов',  price: '$5',  note: '' },
+    { id: 'pack_m', label: '22 000 кредитов', price: '$20', note: '+10% бонус' },
+    { id: 'pack_l', label: '60 000 кредитов', price: '$50', note: '+20% бонус' }
   ];
 
   let providers = [];
@@ -285,7 +285,7 @@ h1 { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 27px; marg
     PACKS.forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'pack-btn';
-      btn.innerHTML = `<div class="pack-title">${p.label}</div><div class="pack-price">${p.price}</div>`;
+      btn.innerHTML = `<div class="pack-title">${p.label}</div><div class="pack-price">${p.price}${p.note ? ' · ' + p.note : ''}</div>`;
       btn.onclick = () => buyPack(p.id);
       el.appendChild(btn);
     });

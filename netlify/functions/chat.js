@@ -29,7 +29,7 @@ function openStore(name) {
 
 
 const FREE_STARTING_CREDITS = 20;
-const CREDIT_VALUE_USD = 0.01; // 1 кредит ~ 1 цент реальной стоимости в OpenRouter
+const CREDIT_VALUE_USD = 0.0001; // 1 кредит = $0.0001 реальной стоимости OpenRouter. Пользователь покупает кредит за $0.001 → маржа ×10
 const MIN_CREDITS_PER_MESSAGE = 1; // минимум для любой платной модели, даже если токенов было мало
 
 // Кэш каталога моделей на время жизни функции (сбрасывается раз в 10 минут)
