@@ -22,9 +22,17 @@
   to = "/.netlify/functions/create-checkout"
   status = 200
 
-# 301: старый netlify.app адрес → основной askhub.net
 [[redirects]]
-  from = "https://mylty.netlify.app/*"
-  to = "https://askhub.net/:splat"
-  status = 301
-  force = true
+  from = "/api/chats"
+  to = "/.netlify/functions/chats"
+  status = 200
+
+[[redirects]]
+  from = "/api/plus"
+  to = "/.netlify/functions/plus-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/plus-webhook"
+  to = "/.netlify/functions/plus-webhook"
+  status = 200

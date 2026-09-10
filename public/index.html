@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>AskHub — один чат, все AI-модели</title>
+<title>AskHub BETA — один чат, все AI-модели</title>
 <meta name="description" content="Один чат — доступ ко всем моделям ИИ: OpenAI, Anthropic, Google, Llama, DeepSeek. Бесплатные модели без ограничений и премиум за копейки.">
 <meta name="theme-color" content="#0b0d17">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -319,12 +319,119 @@ footer a:hover{color:var(--ink)}
   border-top:1px dashed var(--line);line-height:1.5;
 }
 
+/* BETA banner */
+.beta-banner{
+  background:linear-gradient(90deg,#7c5cff 0%,#22d3ee 100%);
+  color:#fff;text-align:center;font-size:13px;padding:8px 16px;font-weight:500;
+}
+.beta-banner a{color:#fff;text-decoration:underline}
+
+/* Sidebar + chat layout */
+.chat-wrap{display:grid;grid-template-columns:260px 1fr;gap:16px;margin-top:16px}
+@media(max-width:900px){.chat-wrap{grid-template-columns:1fr}.sidebar{max-height:220px;overflow:auto}}
+.sidebar{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:14px;display:flex;flex-direction:column;gap:10px;height:fit-content;position:sticky;top:80px;
+}
+.sidebar-new{
+  background:linear-gradient(135deg,#7c5cff,#22d3ee);color:#fff;border:none;
+  padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px;
+}
+.sidebar-title{font-size:11px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.06em;padding:4px 2px}
+.chat-list{display:flex;flex-direction:column;gap:4px}
+.cl-item{
+  display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;
+  cursor:pointer;transition:.15s;color:var(--ink-soft);font-size:13px;
+}
+.cl-item:hover{background:var(--panel-2)}
+.cl-item.active{background:rgba(124,92,255,0.15);color:var(--ink);border:1px solid rgba(124,92,255,0.35)}
+.cl-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.cl-del{background:none;border:none;color:var(--ink-mute);font-size:18px;cursor:pointer;padding:0 4px;line-height:1}
+.cl-del:hover{color:#ff6b6b}
+.cl-empty{color:var(--ink-mute);font-size:12px;padding:8px;text-align:center;margin:0}
+.cl-plus-hint{margin-top:12px;padding:10px;background:rgba(124,92,255,0.08);border:1px dashed rgba(124,92,255,0.3);border-radius:8px;font-size:12px;color:var(--ink-soft);line-height:1.5}
+.cl-plus-hint a{color:#c4b5ff;font-weight:600;text-decoration:none}
+
+/* Session bar */
+.session-bar{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;
+  font-size:13px;flex-wrap:wrap;
+}
+.sb-label{color:var(--ink-soft)}
+.sb-track{flex:1;min-width:100px;height:6px;background:var(--panel-2);border-radius:3px;overflow:hidden}
+.sb-fill{height:100%;background:linear-gradient(90deg,#7c5cff,#22d3ee);width:0;transition:.4s}
+.sb-fill.warn{background:linear-gradient(90deg,#ff9d5c,#ff5c5c)}
+.sb-count{color:var(--ink-mute);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px}
+.sb-upgrade{
+  background:transparent;border:1px solid rgba(124,92,255,0.4);color:#c4b5ff;
+  padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;
+}
+.sb-upgrade:hover{background:rgba(124,92,255,0.1)}
+
+/* Plus button + badge */
+#plus-btn{
+  background:linear-gradient(135deg,#7c5cff,#22d3ee);border:none;color:#fff;font-weight:600;
+}
+.plus-badge{
+  background:linear-gradient(135deg,#7c5cff,#22d3ee);color:#fff;border:none;font-weight:600;
+  cursor:pointer;
+}
+
+/* Modals */
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;
+}
+.modal.open{display:flex;animation:fadeIn .2s ease}
+.modal-card{
+  background:var(--panel);border:1px solid var(--line-strong);border-radius:20px;
+  padding:32px;max-width:420px;width:100%;text-align:center;position:relative;
+}
+.modal-card-lg{max-width:520px;text-align:left}
+.modal-close{
+  position:absolute;top:14px;right:14px;background:none;border:none;
+  color:var(--ink-mute);font-size:24px;cursor:pointer;line-height:1;
+}
+.modal-icon{font-size:48px;margin-bottom:8px}
+.modal-card h3{font-family:'Space Grotesk',sans-serif;font-size:22px;margin:0 0 8px}
+.modal-card p{color:var(--ink-soft);margin:0 0 20px;line-height:1.5}
+.modal-actions{display:flex;flex-direction:column;gap:10px}
+
+/* Plus modal */
+.plus-hero{text-align:center;margin-bottom:20px}
+.plus-icon{font-size:56px;margin-bottom:8px}
+.plus-word{background:linear-gradient(135deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.plus-current{color:var(--ink-mute);font-size:13px;margin:0}
+.plus-features{list-style:none;padding:0;margin:0 0 24px}
+.plus-features li{padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink-soft);font-size:14px}
+.plus-features li:last-child{border-bottom:none}
+.plus-features b{color:var(--ink);font-weight:600}
+.plus-plans{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.plus-plan{
+  padding:16px;border:2px solid var(--line);border-radius:12px;text-align:center;
+  position:relative;
+}
+.plus-plan.featured{border-color:#7c5cff;background:rgba(124,92,255,0.06)}
+.pp-badge{
+  position:absolute;top:-10px;right:-6px;background:linear-gradient(135deg,#7c5cff,#22d3ee);
+  color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;
+}
+.pp-name{font-size:12px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.pp-price{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:var(--ink)}
+.pp-note{font-size:11px;color:var(--ink-mute);margin-top:2px}
+.plus-cta{display:block;text-align:center;text-decoration:none;margin-bottom:12px}
+.plus-help{font-size:12px;color:var(--ink-mute);text-align:center;margin:0;line-height:1.5}
+
 /* Simple animations */
 .fade-in{opacity:0;transform:translateY(20px);animation:fadeIn .8s ease forwards}
 @keyframes fadeIn{to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
+<div class="beta-banner">
+  🧪 <b>BETA</b> — это тестовая версия с сохранением истории и подпиской Plus. Стабильная версия: <a href="https://askhub.net">askhub.net</a>
+</div>
 
 <!-- NAV -->
 <nav class="nav">
@@ -338,6 +445,8 @@ footer a:hover{color:var(--ink)}
         <span class="pill credits-pill" id="credits-pill">— кредитов</span>
         <button class="pill primary" id="topup-toggle">Пополнить</button>
       </div>
+      <button class="pill plus-badge" id="plus-badge" style="display:none">✨ Plus</button>
+      <button class="pill primary" id="plus-btn">✨ Plus</button>
       <a href="#app" class="pill primary" id="start-cta">Открыть чат</a>
     </div>
   </div>
@@ -512,7 +621,20 @@ footer a:hover{color:var(--ink)}
 
   <div class="topup-panel" id="topup-panel"></div>
 
-  <div id="chat" style="display:none;">
+  <div class="chat-wrap">
+  <aside class="sidebar" id="sidebar" style="display:none;">
+    <button class="sidebar-new" id="new-chat-btn">+ Новый проект</button>
+    <div class="sidebar-title">Проекты</div>
+    <div id="chat-list" class="chat-list"></div>
+  </aside>
+
+  <div id="chat" class="chat-main" style="display:none;">
+    <div class="session-bar" id="session-bar" style="display:none;">
+      <span class="sb-label">Сообщений в проекте:</span>
+      <div class="sb-track"><div class="sb-fill" id="session-fill"></div></div>
+      <span class="sb-count" id="session-count">0 / 100</span>
+      <button class="sb-upgrade" onclick="document.getElementById('plus-btn').click()">✨ Снять лимит</button>
+    </div>
     <div class="mode-toggle">
       <button class="mode-btn active" data-mode="free" id="mode-free">🆓 Бесплатный режим</button>
       <button class="mode-btn" data-mode="paid" id="mode-paid">⚡ Премиум-модели</button>
@@ -528,7 +650,57 @@ footer a:hover{color:var(--ink)}
       <button id="send">Отправить</button>
     </div>
   </div>
+  </div>
 </section>
+
+<!-- LIMIT MODAL -->
+<div class="modal" id="limit-modal">
+  <div class="modal-card">
+    <button class="modal-close" data-close-modal>×</button>
+    <div class="modal-icon">🚦</div>
+    <h3>Достигнут лимит сессии</h3>
+    <p>В одном проекте доступно 100 сообщений — это защита от зависания программы и перегрузки контекста модели.</p>
+    <div class="modal-actions">
+      <button class="btn-lg btn-secondary" id="limit-new-chat">+ Открыть новый проект</button>
+      <button class="btn-lg btn-primary" id="limit-upgrade">✨ AskHub Plus — без лимита</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLUS MODAL -->
+<div class="modal" id="plus-modal">
+  <div class="modal-card modal-card-lg">
+    <button class="modal-close" data-close-modal>×</button>
+    <div class="plus-hero">
+      <div class="plus-icon">✨</div>
+      <h3>AskHub <span class="plus-word">Plus</span></h3>
+      <p class="plus-current" id="plus-current">Пока не активирован</p>
+    </div>
+    <ul class="plus-features">
+      <li>💾 <b>Сохранение всей истории</b> — все чаты на всех устройствах, навсегда</li>
+      <li>🗂️ <b>Список проектов с поиском</b> — вернитесь к любой старой переписке</li>
+      <li>⚡ <b>Без лимита в 100 сообщений</b> — бесконечные диалоги в одном проекте</li>
+      <li>🎁 <b>+5 000 кредитов каждый месяц</b> — включено в подписку</li>
+    </ul>
+    <div class="plus-plans">
+      <div class="plus-plan">
+        <div class="pp-name">Месяц</div>
+        <div class="pp-price">$4.99</div>
+        <div class="pp-note">/мес</div>
+      </div>
+      <div class="plus-plan featured">
+        <div class="pp-badge">− 18%</div>
+        <div class="pp-name">Год</div>
+        <div class="pp-price">$49</div>
+        <div class="pp-note">/год ≈ $4.08/мес</div>
+      </div>
+    </div>
+    <a class="btn-lg btn-primary plus-cta" id="plus-tg-link" href="#" target="_blank" rel="noopener">
+      ✨ Оформить через Telegram Stars →
+    </a>
+    <p class="plus-help">Оплата проходит в Telegram-боте. Статус активируется автоматически в течение минуты после оплаты.</p>
+  </div>
+</div>
 
 <!-- CONTACT -->
 <section class="contact">
@@ -570,6 +742,11 @@ footer a:hover{color:var(--ink)}
   let userEmail=null;
   let credits=null;
   let accessCode=localStorage.getItem('multi_access_code')||'';
+  let sessionCount=0;
+  const SESSION_LIMIT=100;
+  let currentChatId=null;
+  let chatList=[];
+  let plusStatus={plus:false,plus_until:null,bot_start_url:null};
 
   const $=id=>document.getElementById(id);
   const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -621,30 +798,136 @@ footer a:hover{color:var(--ink)}
 
   async function send(){
     const t=$('input').value.trim();if(!t)return;
+    if(!plusStatus.plus && sessionCount>=SESSION_LIMIT){showLimitModal();return}
     history.push({role:'user',content:t});$('input').value='';
     $('input').style.height='auto';
     renderThread();$('send').disabled=true;
     const typing=document.createElement('p');typing.className='typing';typing.textContent='Модель отвечает…';$('thread').appendChild(typing);
     const apiMessages=history.filter(m=>!m.error).map(m=>({role:m.role,content:m.content}));
     try{
-      const r=await fetch('/api/chat',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,model:activeModel.id,messages:apiMessages})});
+      const headers=accessHeaders({'Content-Type':'application/json','X-Session-Msg-Count':String(sessionCount)});
+      const r=await fetch('/api/chat',{method:'POST',headers,body:JSON.stringify({user:userEmail,model:activeModel.id,messages:apiMessages})});
       const d=await r.json();
       if(r.status===401){showAccessGate();history.pop()}
       else if(r.status===402){history.push({role:'assistant',content:'Кредиты закончились. Пополните баланс или переключитесь на бесплатный режим.',modelLabel:'Система',error:true})}
+      else if(r.status===429){history.pop();showLimitModal();return}
       else if(!r.ok){throw new Error(d.error||'Ошибка')}
       else{
         history.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel:(d.routedModel||activeModel.label)+(d.isFree?' · бесплатно':'')});
         if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
+        sessionCount++;updateSessionBar();
+        saveCurrentChat();
       }
     }catch(e){history.push({role:'assistant',content:'Ошибка: '+e.message,modelLabel:'Система',error:true})}
     renderThread();$('send').disabled=false;$('input').focus();
   }
 
+  // ==== BETA: session limit, chat projects, Plus ====
+  function updateSessionBar(){
+    const bar=$('session-bar');if(!bar)return;
+    if(plusStatus.plus){bar.style.display='none';return}
+    bar.style.display='flex';
+    const left=Math.max(0,SESSION_LIMIT-sessionCount);
+    $('session-count').textContent=sessionCount+' / '+SESSION_LIMIT;
+    $('session-fill').style.width=Math.min(100,(sessionCount/SESSION_LIMIT)*100)+'%';
+    if(left<=10)$('session-fill').classList.add('warn');else $('session-fill').classList.remove('warn');
+  }
+
+  function showLimitModal(){$('limit-modal').classList.add('open')}
+  function hideLimitModal(){$('limit-modal').classList.remove('open')}
+
+  async function saveCurrentChat(){
+    if(!userEmail||!history.length)return;
+    try{
+      const r=await fetch('/api/chats?user='+encodeURIComponent(userEmail),{
+        method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),
+        body:JSON.stringify({id:currentChatId,messages:history})
+      });
+      const d=await r.json();
+      if(d.ok){currentChatId=d.id;await refreshChatList()}
+    }catch{}
+  }
+
+  async function refreshChatList(){
+    if(!userEmail)return;
+    try{
+      const r=await fetch('/api/chats?user='+encodeURIComponent(userEmail),{headers:accessHeaders()});
+      const d=await r.json();
+      chatList=d.chats||[];
+      renderChatList();
+    }catch{}
+  }
+
+  function renderChatList(){
+    const el=$('chat-list');if(!el)return;
+    el.innerHTML='';
+    if(!chatList.length){el.innerHTML='<p class="cl-empty">Пока пусто. Отправьте первое сообщение.</p>';return}
+    chatList.forEach(c=>{
+      const d=document.createElement('div');
+      d.className='cl-item'+(c.id===currentChatId?' active':'');
+      d.innerHTML='<span class="cl-title">'+esc(c.title)+'</span><button class="cl-del" title="Удалить">×</button>';
+      d.querySelector('.cl-title').onclick=()=>loadChat(c.id);
+      d.querySelector('.cl-del').onclick=e=>{e.stopPropagation();deleteChat(c.id)};
+      el.appendChild(d);
+    });
+    if(!plusStatus.plus){
+      const hint=document.createElement('div');
+      hint.className='cl-plus-hint';
+      hint.innerHTML='🔒 Без Plus видна только последняя переписка. <a href="#" id="cl-upgrade">Оформить Plus →</a>';
+      el.appendChild(hint);
+      hint.querySelector('#cl-upgrade').onclick=e=>{e.preventDefault();openPlusModal()};
+    }
+  }
+
+  async function loadChat(id){
+    try{
+      const r=await fetch('/api/chats?user='+encodeURIComponent(userEmail)+'&id='+encodeURIComponent(id),{headers:accessHeaders()});
+      const d=await r.json();
+      if(!r.ok)return;
+      currentChatId=id;history=d.messages||[];sessionCount=0;
+      renderThread();updateSessionBar();renderChatList();
+    }catch{}
+  }
+
+  async function deleteChat(id){
+    if(!confirm('Удалить этот проект?'))return;
+    await fetch('/api/chats?user='+encodeURIComponent(userEmail)+'&id='+encodeURIComponent(id),{method:'DELETE',headers:accessHeaders()});
+    if(id===currentChatId){newChat()}
+    else{await refreshChatList()}
+  }
+
+  function newChat(){
+    currentChatId=null;history=[];sessionCount=0;
+    renderThread();updateSessionBar();hideLimitModal();
+    renderChatList();
+    $('input').focus();
+  }
+
+  async function refreshPlus(){
+    if(!userEmail)return;
+    try{
+      const r=await fetch('/api/plus?user='+encodeURIComponent(userEmail),{headers:accessHeaders()});
+      plusStatus=await r.json();
+      $('plus-badge').style.display=plusStatus.plus?'inline-flex':'none';
+      updateSessionBar();
+    }catch{}
+  }
+
+  function openPlusModal(){
+    $('plus-modal').classList.add('open');
+    $('plus-tg-link').href=plusStatus.bot_start_url||'#';
+    $('plus-current').textContent=plusStatus.plus
+      ? 'Активен до '+new Date(plusStatus.plus_until).toLocaleDateString('ru-RU')
+      : 'Пока не активирован';
+  }
+  function closePlusModal(){$('plus-modal').classList.remove('open')}
+
   function startApp(email){
     userEmail=email;localStorage.setItem('multi_user_email',email);
     $('gate').style.display='none';$('credits-box').style.display='flex';
     $('chat').style.display='block';$('start-cta').style.display='none';
-    refreshCredits();
+    $('sidebar').style.display='flex';
+    refreshCredits();refreshPlus();refreshChatList();updateSessionBar();
     setTimeout(()=>$('chat').scrollIntoView({behavior:'smooth',block:'start'}),100);
   }
   function showAccessGate(){$('gate').style.display='none';$('chat').style.display='none';$('credits-box').style.display='none';$('access-gate').style.display='block'}
@@ -655,6 +938,12 @@ footer a:hover{color:var(--ink)}
   $('email-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('gate-btn').click()});
   $('topup-toggle').onclick=()=>$('topup-panel').classList.toggle('open');
   $('send').onclick=send;
+  $('new-chat-btn').onclick=newChat;
+  $('plus-btn').onclick=openPlusModal;
+  $('plus-badge').onclick=openPlusModal;
+  document.querySelectorAll('[data-close-modal]').forEach(b=>b.onclick=()=>{$('plus-modal').classList.remove('open');$('limit-modal').classList.remove('open')});
+  $('limit-new-chat').onclick=()=>{hideLimitModal();newChat()};
+  $('limit-upgrade').onclick=()=>{hideLimitModal();openPlusModal()};
   $('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
   $('input').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'});
 

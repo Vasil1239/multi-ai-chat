@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const { getPlusStatus, SESSION_MSG_LIMIT_FREE } = require('./_shared');
 
 // In-memory fallback store: используется если Netlify Blobs недоступен
 const _memStore = new Map();
@@ -70,6 +71,22 @@ exports.handler = async function (event) {
 
   if (!checkAccessCode(event)) {
     return { statusCode: 401, body: JSON.stringify({ error: 'invalid_access_code' }) };
+  }
+
+  // Session message limit for free users (client-reported counter). Plus users are unlimited.
+  const sessionCount = parseInt(event.headers['x-session-msg-count'] || event.headers['X-Session-Msg-Count'] || '0', 10);
+  const userForPlus = (() => { try { return (JSON.parse(event.body || '{}').user || '').trim().toLowerCase(); } catch { return ''; } })();
+  const plusStatus = userForPlus ? await getPlusStatus(userForPlus) : { plus: false };
+  if (!plusStatus.plus && sessionCount >= SESSION_MSG_LIMIT_FREE) {
+    return {
+      statusCode: 429,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'session_limit',
+        limit: SESSION_MSG_LIMIT_FREE,
+        message: `Лимит ${SESSION_MSG_LIMIT_FREE} запросов в сессии. Откройте новый проект или оформите AskHub Plus.`
+      })
+    };
   }
 
   let body;
