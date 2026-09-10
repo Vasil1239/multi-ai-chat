@@ -1,6 +1,6 @@
 // AskHub service worker - минимальный оффлайн-кэш для оболочки
-const CACHE = 'askhub-v1';
-const SHELL = ['/', '/index.html', '/manifest.json', '/img/hero.jpg', '/img/chat.jpg', '/img/icon-192.png', '/img/icon-512.png'];
+const CACHE = 'askhub-v2';
+const SHELL = ['/', '/index.html', '/manifest.json', '/img/hero.jpg', '/img/chat.jpg', '/img/icon-192.png', '/img/icon-512.png', '/img/apple-touch-icon.png', '/img/icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(()=>{}));
