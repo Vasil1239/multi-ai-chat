@@ -446,7 +446,7 @@ footer a:hover{color:var(--ink)}
         <button class="pill primary" id="topup-toggle">Пополнить</button>
       </div>
       <button class="pill plus-badge" id="plus-badge" style="display:none">✨ Plus</button>
-      <button class="pill primary" id="plus-btn">✨ Plus</button>
+      <button class="pill primary" id="plus-btn" style="display:none">✨ Plus</button>
       <a href="#app" class="pill primary" id="start-cta">Открыть чат</a>
     </div>
   </div>
@@ -910,7 +910,20 @@ footer a:hover{color:var(--ink)}
     try{
       const r=await fetch('/api/plus?user='+encodeURIComponent(userEmail),{headers:accessHeaders()});
       plusStatus=await r.json();
-      $('plus-badge').style.display=plusStatus.plus?'inline-flex':'none';
+      const isBeta=!!plusStatus.beta;
+      const badge=$('plus-badge');
+      const btn=$('plus-btn');
+      if(isBeta){
+        badge.textContent='✨ Beta';
+        badge.title='Бесплатный бета-доступ: все возможности Plus включены';
+        badge.style.display='inline-flex';
+        btn.style.display='none';
+      } else {
+        badge.textContent='✨ Plus';
+        badge.title='';
+        badge.style.display=plusStatus.plus?'inline-flex':'none';
+        btn.style.display=plusStatus.plus?'none':'inline-flex';
+      }
       updateSessionBar();
     }catch{}
   }
