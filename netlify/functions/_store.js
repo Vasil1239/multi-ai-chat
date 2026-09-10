@@ -8,7 +8,7 @@
 // Если переменные не заданы — падаем в in-memory fallback (чтобы сайт работал
 // хотя бы в пределах одного холодного запуска функции).
 
-const FREE_STARTING_CREDITS = 100;
+const FREE_STARTING_CREDITS = 1000;
 
 const _mem = new Map();
 
