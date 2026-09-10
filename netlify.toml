@@ -41,3 +41,8 @@
   from = "/api/plus-bot"
   to = "/.netlify/functions/plus-bot"
   status = 200
+
+[[redirects]]
+  from = "/api/plus-bot-admin"
+  to = "/.netlify/functions/plus-bot-admin"
+  status = 200
