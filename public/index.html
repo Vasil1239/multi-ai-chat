@@ -519,6 +519,10 @@ footer a:hover{color:var(--ink)}
       <button class="mode-btn" data-mode="image" id="mode-image">🎨 Изображение</button>
     </div>
     <p class="mode-hint" id="mode-hint">Бесплатный режим: без списаний, любая доступная free-модель.</p>
+    <div id="image-quality-toggle" style="display:none;margin:8px 0;font-size:14px;">
+      <label style="margin-right:14px;cursor:pointer;"><input type="radio" name="imgq" value="standard" checked> Стандарт · 50 кред (~$0.05)</label>
+      <label style="cursor:pointer;"><input type="radio" name="imgq" value="hd"> HD · русский текст · 150 кред (~$0.15)</label>
+    </div>
 
     <div class="thread" id="thread">
       <p class="empty-state">Задайте вопрос — и получите ответ от AI-модели.</p>
@@ -586,6 +590,7 @@ footer a:hover{color:var(--ink)}
     $('mode-free').classList.toggle('active',m==='free');
     $('mode-paid').classList.toggle('active',m==='paid');
     $('mode-image').classList.toggle('active',m==='image');
+    $('image-quality-toggle').style.display = (m==='image') ? 'block' : 'none';
     $('mode-hint').textContent=MODE_HINTS[m];
     $('input').placeholder = m==='image'
       ? 'Опишите картинку: «Инфографика о строительстве дома из газобетона, плоская векторная иллюстрация, синие и оранжевые акценты…»'
@@ -678,20 +683,23 @@ footer a:hover{color:var(--ink)}
     try{
       if(mode==='image'){
         // Генерация картинки
+        const quality = (document.querySelector('input[name="imgq"]:checked')||{}).value || 'standard';
         const r=await fetch('/api/image',{
           method:'POST',
           headers:accessHeaders({'Content-Type':'application/json'}),
-          body:JSON.stringify({user:userEmail,prompt:t,model:activeModel.id})
+          body:JSON.stringify({user:userEmail,prompt:t,quality})
         });
         const d=await readJsonSafe(r);
         if(r.status===401){showAccessGate();history.pop()}
-        else if(r.status===402){history.push({role:'assistant',content:'Кредиты закончились. На картинку нужно '+(d.needed||50)+' кредитов. Пополните баланс.',modelLabel:'Система',error:true})}
+        else if(r.status===402){history.push({role:'assistant',content:(d.message||('Кредитов недостаточно, нужно '+(d.needed||50))),modelLabel:'Система',error:true})}
+        else if(r.status===503){history.push({role:'assistant',content:(d.message||'HD временно недоступен, попробуйте стандарт'),modelLabel:'Система',error:true})}
         else if(!r.ok){throw new Error(d.error||('Ошибка HTTP '+r.status))}
         else{
           const src = d.imageB64 ? ('data:image/png;base64,'+d.imageB64) : d.imageUrl;
           if(!src) throw new Error('Провайдер не вернул изображение');
-          const priceTag = d.usedFreeToday ? ' · бесплатная картинка дня' : (' · −'+(d.creditsCharged||50)+' кредитов');
-          history.push({role:'assistant',content:'',imageSrc:src,modelLabel:(d.provider||'image')+priceTag});
+          const priceTag = d.usedFreeToday ? ' · бесплатная картинка дня' : (' · −'+(d.creditsCharged||0)+' кредитов');
+          const modeTag = d.mode==='hd' ? ' · HD' : '';
+          history.push({role:'assistant',content:'',imageSrc:src,modelLabel:(d.provider||'image')+modeTag+priceTag});
           if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
         }
       } else {

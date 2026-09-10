@@ -8,7 +8,8 @@
 // Если переменные не заданы — падаем в in-memory fallback (чтобы сайт работал
 // хотя бы в пределах одного холодного запуска функции).
 
-const FREE_STARTING_CREDITS = 1000;
+const FREE_STARTING_CREDITS = 300;
+const FREE_TRIAL_DAYS = 7; // сколько дней после регистрации доступны бесплатные картинки/сутки
 
 const _mem = new Map();
 
@@ -38,7 +39,7 @@ async function _sbFetch(path, opts = {}) {
 
 async function getCredits(user) {
   if (!_hasSupabase()) {
-    return _mem.get(user) || { user_email: user, credits: FREE_STARTING_CREDITS, img_day: null, img_used_today: 0 };
+    return _mem.get(user) || { user_email: user, credits: FREE_STARTING_CREDITS, img_day: null, img_used_today: 0, created_at: new Date().toISOString() };
   }
   const arr = await _sbFetch(`/askhub_credits?user_email=eq.${encodeURIComponent(user)}&select=*`);
   if (arr && arr.length) return arr[0];
@@ -48,6 +49,15 @@ async function getCredits(user) {
     body: JSON.stringify({ user_email: user, credits: FREE_STARTING_CREDITS }),
   });
   return Array.isArray(created) ? created[0] : created;
+}
+
+// true, если пользователь ещё в первых FREE_TRIAL_DAYS днях от создания записи
+function isInFreeTrialWindow(record) {
+  if (!record || !record.created_at) return true; // на всякий случай — пропускаем
+  const created = new Date(record.created_at).getTime();
+  const now = Date.now();
+  const daysPassed = (now - created) / (1000 * 60 * 60 * 24);
+  return daysPassed <= FREE_TRIAL_DAYS;
 }
 
 async function saveCredits(user, patch) {
@@ -69,4 +79,4 @@ async function saveCredits(user, patch) {
   return Array.isArray(arr) ? arr[0] : arr;
 }
 
-module.exports = { getCredits, saveCredits, FREE_STARTING_CREDITS };
+module.exports = { getCredits, saveCredits, FREE_STARTING_CREDITS, FREE_TRIAL_DAYS, isInFreeTrialWindow };

@@ -147,40 +147,42 @@ exports.handler = async function (event) {
       record.img_day = todayKey;
       record.img_used_today = 0;
     }
-    const freeLeftToday = Math.max(0, FREE_IMAGES_PER_DAY - (record.img_used_today || 0));
+    // Бесплатные картинки — только в первые 7 дней от регистрации и только на Gemini (стандарт)
+    const inTrial = isInFreeTrialWindow(record);
+    const freeLeftToday = (inTrial && !wantHD)
+      ? Math.max(0, FREE_IMAGES_PER_DAY - (record.img_used_today || 0))
+      : 0;
     const useFree = freeLeftToday > 0;
 
-    if (!useFree && record.credits < IMAGE_CREDIT_COST) {
+    const costCredits = wantHD ? IMAGE_COST_HD : IMAGE_COST_STANDARD;
+
+    if (!useFree && record.credits < costCredits) {
       return json(402, {
         error: 'insufficient_credits',
         credits: record.credits,
-        needed: IMAGE_CREDIT_COST,
+        needed: costCredits,
         freeLeftToday: 0,
-        message: 'Дневной бесплатный лимит на изображения исчерпан. Пополните баланс.'
+        message: wantHD
+          ? `HD-картинка стоит ${costCredits} кредитов. Пополните баланс.`
+          : `Картинка стоит ${costCredits} кредитов.` + (inTrial ? ` В trial-режиме доступно ${FREE_IMAGES_PER_DAY} бесплатных/сутки.` : ' Пополните баланс.'),
       });
     }
 
-    // Пробуем провайдеров по очереди
-    const attempts = [];
+    // Маршрутизация: HD → только OpenAI, std → только Gemini (не жжём OpenAI на бесплатках)
     let result = null;
-
-    for (const gen of [generateWithOpenAI, () => generateWithOpenRouter({ prompt, model })]) {
-      try {
-        const r = typeof gen === 'function'
-          ? await gen({ prompt, size, model })
-          : null;
-        if (r) { result = r; break; }
-      } catch (e) {
-        attempts.push(e.message || String(e));
-      }
-    }
+    const attempts = [];
+    try {
+      result = wantHD
+        ? await generateWithOpenAI({ prompt, size })
+        : await generateWithOpenRouter({ prompt, model });
+    } catch (e) { attempts.push(e.message || String(e)); }
 
     if (!result) {
-      const detail = attempts.length ? attempts.join(' | ') : 'ни один провайдер не настроен';
-      return json(500, {
-        error: 'Не удалось сгенерировать изображение: ' + detail +
-               '. Добавьте OPENAI_API_KEY или OPENROUTER_API_KEY в переменные Netlify.'
-      });
+      const detail = attempts.length ? attempts.join(' | ') : 'провайдер не настроен';
+      if (wantHD) {
+        return json(503, { error: 'hd_unavailable', message: 'HD недоступен: ' + detail + '. Добавьте OPENAI_API_KEY в Netlify.' });
+      }
+      return json(500, { error: 'Не удалось сгенерировать изображение: ' + detail });
     }
 
     // Списываем: сначала бесплатный лимит дня, потом — кредиты
@@ -190,8 +192,8 @@ exports.handler = async function (event) {
     if (useFree) {
       newImgUsed += 1;
     } else {
-      newCredits -= IMAGE_CREDIT_COST;
-      creditsCharged = IMAGE_CREDIT_COST;
+      newCredits -= costCredits;
+      creditsCharged = costCredits;
     }
     const saved = await saveCredits(user, {
       credits: newCredits,
@@ -204,7 +206,9 @@ exports.handler = async function (event) {
       credits: saved.credits,
       creditsCharged,
       usedFreeToday: useFree,
-      freeLeftToday: Math.max(0, FREE_IMAGES_PER_DAY - newImgUsed),
+      freeLeftToday: inTrial && !wantHD ? Math.max(0, FREE_IMAGES_PER_DAY - newImgUsed) : 0,
+      mode: wantHD ? 'hd' : 'standard',
+      trial: inTrial,
     });
   } catch (e) {
     console.error('image.js unhandled:', e);
