@@ -39,8 +39,19 @@ async function getCatalog() {
   const now = Date.now();
   if (catalogCache.free && now - catalogCache.ts < 10 * 60 * 1000) return catalogCache;
 
-  const res = await fetch('https://openrouter.ai/api/v1/models');
-  const json = await res.json();
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 5000);
+  let json;
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/models', { signal: controller.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    const raw = await res.text();
+    if (!ct.includes('application/json')) throw new Error('non-json catalog');
+    json = JSON.parse(raw);
+  } finally {
+    clearTimeout(t);
+  }
   const free = new Set();
   const pricing = new Map(); // id -> { prompt: $/токен, completion: $/токен }
 
@@ -63,66 +74,120 @@ function checkAccessCode(event) {
   return provided === required;
 }
 
+// Единый helper: всегда JSON + Content-Type
+const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
+function json(statusCode, payload) {
+  return { statusCode, headers: JSON_HEADERS, body: JSON.stringify(payload) };
+}
+
+// Безопасное чтение ответа fetch: если сервер вернул HTML/пусто — не падаем,
+// а возвращаем осмысленный объект с текстом ошибки, чтобы клиент увидел JSON.
+async function safeReadJson(res) {
+  const raw = await res.text();
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  if (!raw) return { ok: false, data: null, error: `Пустой ответ провайдера (HTTP ${res.status})` };
+  if (ct.includes('application/json')) {
+    try { return { ok: true, data: JSON.parse(raw) }; }
+    catch (e) { return { ok: false, data: null, error: 'Провайдер вернул повреждённый JSON' }; }
+  }
+  // Не-JSON ответ (обычно HTML-страница ошибки CDN/провайдера)
+  try { return { ok: true, data: JSON.parse(raw) }; }
+  catch (_) {
+    const snippet = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    return { ok: false, data: null, error: `Провайдер вернул не JSON (HTTP ${res.status}): ${snippet || 'нет тела'}` };
+  }
+}
+
+// Fetch с таймаутом — чтобы функция не висла до таймаута Netlify (26с)
+// и всегда возвращала JSON, а не HTML-заглушку от платформы.
+async function fetchWithTimeout(url, options = {}, timeoutMs = 22000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 exports.handler = async function (event) {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
-  }
-
-  if (!checkAccessCode(event)) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'invalid_access_code' }) };
-  }
-
-  let body;
   try {
-    body = JSON.parse(event.body || '{}');
-  } catch (e) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Некорректный JSON' }) };
-  }
+    if (event.httpMethod !== 'POST') {
+      return json(405, { error: 'Method not allowed' });
+    }
 
-  const { user, model, messages } = body;
-  if (!user || !model || !Array.isArray(messages)) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Нужны user, model и messages' }) };
-  }
+    if (!checkAccessCode(event)) {
+      return json(401, { error: 'invalid_access_code' });
+    }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'OPENROUTER_API_KEY не настроен в Netlify' }) };
-  }
+    let body;
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch (e) {
+      return json(400, { error: 'Некорректный JSON в запросе' });
+    }
 
-  const store = openStore('credits');
-  let record = await store.get(user, { type: 'json' });
-  if (!record) {
-    record = { credits: FREE_STARTING_CREDITS };
-    await store.setJSON(user, record);
-  }
+    const { user, model, messages } = body;
+    if (!user || !model || !Array.isArray(messages)) {
+      return json(400, { error: 'Нужны user, model и messages' });
+    }
 
-  const { free, pricing } = await getCatalog();
-  const isFree = free.has(model);
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      return json(500, { error: 'OPENROUTER_API_KEY не настроен в Netlify' });
+    }
 
-  // Предварительная проверка: не пускаем с нулевым/отрицательным балансом на платную модель.
-  // Точная стоимость (которая может быть чуть выше 1 кредита для дорогих моделей) спишется после ответа.
-  if (!isFree && record.credits < MIN_CREDITS_PER_MESSAGE) {
-    return {
-      statusCode: 402,
-      body: JSON.stringify({ error: 'insufficient_credits', credits: record.credits })
-    };
-  }
+    const store = openStore('credits');
+    let record = await store.get(user, { type: 'json' });
+    if (!record) {
+      record = { credits: FREE_STARTING_CREDITS };
+      await store.setJSON(user, record);
+    }
 
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': process.env.URL || 'https://netlify.app',
-        'X-Title': 'Multi AI Chat'
-      },
-      body: JSON.stringify({ model, messages })
-    });
-    const data = await res.json();
+    // Каталог моделей — не критичен: если OpenRouter отвалился, считаем модель бесплатной
+    // только если id заканчивается на ":free", иначе не блокируем запрос.
+    let free = new Set(), pricing = new Map();
+    try {
+      const catalog = await getCatalog();
+      free = catalog.free;
+      pricing = catalog.pricing;
+    } catch (e) {
+      console.warn('Не удалось загрузить каталог моделей:', e.message);
+    }
+    const isFree = free.has(model) || /:free$/i.test(model);
+
+    if (!isFree && record.credits < MIN_CREDITS_PER_MESSAGE) {
+      return json(402, { error: 'insufficient_credits', credits: record.credits });
+    }
+
+    let res;
+    try {
+      res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': process.env.URL || 'https://askhub.net',
+          'X-Title': 'AskHub'
+        },
+        body: JSON.stringify({ model, messages })
+      }, 22000);
+    } catch (e) {
+      const msg = e.name === 'AbortError'
+        ? 'Модель отвечала слишком долго. Попробуйте другой вопрос или другую модель.'
+        : ('Сеть недоступна: ' + e.message);
+      return json(504, { error: msg });
+    }
+
+    const parsed = await safeReadJson(res);
+    if (!parsed.ok) {
+      return json(res.status >= 400 ? res.status : 502, { error: parsed.error });
+    }
+    const data = parsed.data;
 
     if (!res.ok) {
-      return { statusCode: res.status, body: JSON.stringify({ error: data.error?.message || 'Ошибка запроса к модели' }) };
+      const msg = (data && (data.error?.message || data.error || data.message)) || `Ошибка провайдера (HTTP ${res.status})`;
+      return json(res.status, { error: typeof msg === 'string' ? msg : JSON.stringify(msg) });
     }
 
     let creditsCharged = 0;
@@ -141,12 +206,9 @@ exports.handler = async function (event) {
     const text = data.choices?.[0]?.message?.content || '';
     const routedModel = data.model || model;
 
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, credits: record.credits, isFree, routedModel, creditsCharged })
-    };
+    return json(200, { text, credits: record.credits, isFree, routedModel, creditsCharged });
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+    console.error('chat.js unhandled error:', e);
+    return json(500, { error: 'Внутренняя ошибка: ' + (e.message || 'unknown') });
   }
 };

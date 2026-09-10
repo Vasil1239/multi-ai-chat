@@ -597,11 +597,27 @@ footer a:hover{color:var(--ink)}
     el.scrollTop=el.scrollHeight;
   }
 
+  // Безопасный разбор ответа: если сервер вернул HTML/пусто (500/504/заглушка CDN),
+  // не падаем с "Unexpected token '<'", а показываем человеческую ошибку.
+  async function readJsonSafe(r){
+    const raw=await r.text();
+    const ct=(r.headers.get('content-type')||'').toLowerCase();
+    if(!raw) return {};
+    if(ct.includes('application/json')){
+      try{return JSON.parse(raw)}catch(_){return {error:'Сервер вернул повреждённый JSON'}}
+    }
+    try{return JSON.parse(raw)}catch(_){
+      return {error:'Сервер временно недоступен (HTTP '+r.status+'). Попробуйте ещё раз через несколько секунд.'};
+    }
+  }
+
   async function refreshCredits(){
-    const r=await fetch('/api/credits?user='+encodeURIComponent(userEmail),{headers:accessHeaders()});
-    if(r.status===401){showAccessGate();return}
-    const d=await r.json();credits=d.credits;
-    $('credits-pill').textContent=credits+' кредитов';
+    try{
+      const r=await fetch('/api/credits?user='+encodeURIComponent(userEmail),{headers:accessHeaders()});
+      if(r.status===401){showAccessGate();return}
+      const d=await readJsonSafe(r);
+      if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
+    }catch(e){/* не критично — просто не обновим баланс */}
   }
 
   function renderTopup(){
@@ -613,10 +629,12 @@ footer a:hover{color:var(--ink)}
     });
   }
   async function buyPack(id){
-    const r=await fetch('/api/checkout',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,pack:id})});
-    if(r.status===401){showAccessGate();return}
-    const d=await r.json();
-    if(d.url)location.href=d.url;else alert('Не удалось создать оплату: '+(d.error||'ошибка'));
+    try{
+      const r=await fetch('/api/checkout',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,pack:id})});
+      if(r.status===401){showAccessGate();return}
+      const d=await readJsonSafe(r);
+      if(d.url)location.href=d.url;else alert('Не удалось создать оплату: '+(d.error||'ошибка'));
+    }catch(e){alert('Ошибка сети: '+e.message)}
   }
 
   async function send(){
@@ -628,15 +646,15 @@ footer a:hover{color:var(--ink)}
     const apiMessages=history.filter(m=>!m.error).map(m=>({role:m.role,content:m.content}));
     try{
       const r=await fetch('/api/chat',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,model:activeModel.id,messages:apiMessages})});
-      const d=await r.json();
+      const d=await readJsonSafe(r);
       if(r.status===401){showAccessGate();history.pop()}
       else if(r.status===402){history.push({role:'assistant',content:'Кредиты закончились. Пополните баланс или переключитесь на бесплатный режим.',modelLabel:'Система',error:true})}
-      else if(!r.ok){throw new Error(d.error||'Ошибка')}
+      else if(!r.ok){throw new Error(d.error||('Ошибка HTTP '+r.status))}
       else{
         history.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel:(d.routedModel||activeModel.label)+(d.isFree?' · бесплатно':'')});
         if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
       }
-    }catch(e){history.push({role:'assistant',content:'Ошибка: '+e.message,modelLabel:'Система',error:true})}
+    }catch(e){history.push({role:'assistant',content:'Ошибка: '+(e&&e.message?e.message:'неизвестно'),modelLabel:'Система',error:true})}
     renderThread();$('send').disabled=false;$('input').focus();
   }
 
