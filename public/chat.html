@@ -57,7 +57,7 @@ a{color:var(--accent);text-decoration:none}
 .icon-btn.del:hover{color:var(--bad)}
 .chat-count{color:var(--ink-mute);font-size:11px}
 
-.sidebar-foot{border-top:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:12.5px}
+.sidebar-foot{border-top:1px solid var(--line);padding:12px 14px 60px;display:flex;flex-direction:column;gap:8px;font-size:12.5px}
 .pill{background:var(--panel-2);border:1px solid var(--line);border-radius:100px;padding:5px 11px;font-size:12px;color:var(--ink-soft);display:inline-flex;align-items:center;gap:6px}
 .pill b{color:var(--ink);font-weight:700}
 .foot-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -68,13 +68,13 @@ a{color:var(--accent);text-decoration:none}
 .mobile-topbar{display:none;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center;gap:10px}
 .hamb{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);width:36px;height:36px;font-size:18px;cursor:pointer}
 
-.chat-head{padding:14px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);position:relative;z-index:1}
-.chat-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--ink);flex:1;min-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.head-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chat-head{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);position:relative;z-index:5}
+.chat-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--ink);flex:1 1 220px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.head-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex-shrink:0}
 .mode-tabs{display:flex;gap:0;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:3px}
 .mode-tabs button{background:transparent;border:none;color:var(--ink-mute);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
 .mode-tabs button.active{background:var(--panel-3);color:var(--ink)}
-.model-select-inline{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:7px 10px;font-size:13px;cursor:pointer;max-width:220px}
+.model-select-inline{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:7px 28px 7px 10px;font-size:13px;cursor:pointer;max-width:220px;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-soft) 50%),linear-gradient(135deg,var(--ink-soft) 50%,transparent 50%);background-position:calc(100% - 14px) 50%,calc(100% - 9px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
 .model-select-inline:focus{outline:none;border-color:var(--accent)}
 
 .thread-wrap{flex:1;overflow-y:auto;padding:24px 0;scroll-behavior:smooth}
@@ -96,11 +96,14 @@ a{color:var(--accent);text-decoration:none}
 .msg-content{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
 .msg.user .msg-content{background:transparent;border-color:transparent;padding:6px 0}
 .msg.error .msg-content{border-color:rgba(255,115,115,.35);color:#fecaca}
-.msg-content img{max-width:100%;border-radius:10px;display:block}
+.msg-content img{max-width:100%;max-height:520px;object-fit:contain;border-radius:10px;display:block;background:#000;cursor:zoom-in}
+.msg-content .img-actions{display:flex;gap:8px;margin-top:8px}
+.msg-content .img-actions a{background:var(--panel-2);border:1px solid var(--line);color:var(--ink-soft);padding:5px 10px;border-radius:8px;font-size:12px;text-decoration:none}
+.msg-content .img-actions a:hover{color:var(--ink);border-color:var(--accent)}
 .typing{color:var(--ink-mute);font-style:italic;padding:8px 14px}
 
 /* Composer */
-.composer-wrap{border-top:1px solid var(--line);padding:14px 24px 20px;background:var(--bg)}
+.composer-wrap{border-top:1px solid var(--line);padding:14px 24px 60px;background:var(--bg)}
 .composer{max-width:820px;margin:0 auto;position:relative}
 .composer-inner{background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;padding:8px 8px 8px 14px;display:flex;align-items:flex-end;gap:8px;transition:border-color .15s}
 .composer-inner:focus-within{border-color:var(--accent)}
@@ -188,7 +191,7 @@ a{color:var(--accent);text-decoration:none}
         <span class="topup-link" id="topup-link">Пополнить</span>
       </div>
       <div class="foot-row">
-        <span id="user-email-lbl" style="color:var(--ink-mute);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px"></span>
+        <span id="user-email-lbl" title="" style="color:var(--ink-mute);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1"></span>
         <span class="topup-link" id="logout-link" style="font-size:11.5px">Выйти</span>
       </div>
     </div>
@@ -436,7 +439,9 @@ function deleteChat(c) {
 // ============ RENDER: thread & head ============
 function updateHead() {
   const c = currentChat();
-  $('chat-title').textContent = c ? (c.title || 'Чат') : 'Выберите или создайте чат';
+  const titleText = c ? (c.title || 'Чат') : 'Выберите или создайте чат';
+  $('chat-title').textContent = titleText;
+  $('chat-title').title = titleText;
   const count = c ? c.messages.length : 0;
   $('msg-count').textContent = count;
   const tag = $('limit-tag'); tag.className = 'limit-tag';
@@ -463,6 +468,9 @@ function renderMsg(m) {
   let content = '';
   if (m.imageSrc) content = `<img src="${m.imageSrc}" alt="картинка">`;
   else content = esc(m.content || '');
+  if (m.imageSrc) {
+    content += `<div class="img-actions"><a href="${m.imageSrc}" download="askhub-image.png">↓ Скачать</a><a href="${m.imageSrc}" target="_blank" rel="noopener">⇱ Открыть</a></div>`;
+  }
   const meta = m.role !== 'user' ? `<div class="msg-meta">${esc(m.modelLabel || (m.role==='assistant' ? 'AI' : 'Система'))}</div>` : '';
   return `<div class="${cls}"><div class="msg-avatar">${esc(avatar)}</div><div class="msg-body">${meta}<div class="msg-content">${content}</div></div></div>`;
 }
@@ -666,7 +674,7 @@ $('gate-btn').onclick = () => {
   const code = $('gate-access').value.trim();
   if (code) { state.accessCode = code; localStorage.setItem('multi_access_code', code); }
   state.userEmail = email; localStorage.setItem('multi_user_email', email);
-  $('user-email-lbl').textContent = email;
+  const lbl = $('user-email-lbl'); lbl.textContent = email; lbl.title = email;
   hideGate(); boot();
 };
 $('gate-email').addEventListener('keydown', e => { if (e.key==='Enter') $('gate-btn').click(); });
@@ -685,7 +693,7 @@ async function boot() {
 const savedEmail = localStorage.getItem('multi_user_email');
 if (savedEmail) {
   state.userEmail = savedEmail;
-  $('user-email-lbl').textContent = savedEmail;
+  const lbl = $('user-email-lbl'); lbl.textContent = savedEmail; lbl.title = savedEmail;
   hideGate(); boot();
 } else {
   showGate(); $('gate-email').focus();
