@@ -205,11 +205,17 @@ exports.handler = async function (event) {
       costUsdLogged =
         (usage.prompt_tokens || 0) * price.prompt +
         (usage.completion_tokens || 0) * price.completion;
-      // Perplexity Sonar — есть отдельная плата за поиск, добавляем фикс сверху:
-      // sonar $0.005/запрос, sonar-pro $0.005/запрос, sonar-reasoning $0.005/запрос.
+      // Perplexity Sonar — отдельная плата за поиск сверх токенов (docs.perplexity.ai, medium context):
+      //   sonar          — $0.008/запрос
+      //   sonar-pro      — $0.010/запрос
+      //   sonar-reasoning-pro — $0.010/запрос
+      //   sonar-deep-research — $0.005/запрос
+      // берём medium как безопасный дефолт. Клиенту с маржой ×10 всё равно выгодно.
       const midStr = (routedIdEarly || model || '').toLowerCase();
       if (midStr.startsWith('perplexity/sonar')) {
-        costUsdLogged += 0.005;
+        if (midStr.includes('deep-research')) costUsdLogged += 0.005;
+        else if (midStr.includes('pro') || midStr.includes('reasoning')) costUsdLogged += 0.010;
+        else costUsdLogged += 0.008;
       }
       creditsCharged = Math.max(MIN_CREDITS_PER_MESSAGE, Math.ceil(costUsdLogged / CREDIT_VALUE_USD));
       record = await saveCredits(user, { credits: record.credits - creditsCharged });
