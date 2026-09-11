@@ -631,7 +631,8 @@ async function send() {
       }
       else if (!r.ok) throw new Error(d.error || ('HTTP '+r.status));
       else {
-        chat.messages.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel:(d.routedModel||state.activeModel.label)+(d.isFree?' · бесплатно':'')});
+        // Не показываем внутренний id из OpenRouter (может содержать бренд провайдера) — всегда берём лейбл из каталога
+chat.messages.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel: state.activeModel.label + (d.isFree?' · бесплатно':'')});
         if (typeof d.credits === 'number')       { state.credits = d.credits; updateCreditsPill(); }
         if (typeof d.freeLeftToday === 'number')  state.freeLeftToday = d.freeLeftToday;
         if (typeof d.freeQuotaDaily === 'number') state.freeQuotaDaily = d.freeQuotaDaily;
