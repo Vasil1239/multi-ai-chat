@@ -103,55 +103,112 @@ async function checkSitemapUrls(sitemapText, limit = 20) {
   return { total: urls.length, sampled: sample.length, broken, redirects, slow: results.filter(r => r.ms > 3000) };
 }
 
-// Rank sampling via Yandex XML? Without API — try HTML search page. Fragile but zero-cost.
-async function estimateRank(query, engine = 'google', domain = 'askhub.net') {
+// Rank sampling.
+//   - Yandex: XML API (requires YANDEX_XML_USER + YANDEX_XML_KEY) — https://xml.yandex.ru
+//   - Google: Custom Search JSON API (requires GOOGLE_CSE_ID + GOOGLE_CSE_KEY) — 100 req/day free
+//   - Fallback: DuckDuckGo HTML (zero-cost, imprecise, best-effort)
+async function rankViaGoogleCSE(query, domain) {
+  const key = process.env.GOOGLE_CSE_KEY, cx = process.env.GOOGLE_CSE_ID;
+  if (!key || !cx) return null;
+  const url = `https://www.googleapis.com/customsearch/v1?key=${key}&cx=${cx}&q=${encodeURIComponent(query)}&num=10`;
   try {
-    let url;
-    if (engine === 'google') {
-      url = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=50&hl=ru&gl=ru`;
-    } else {
-      url = `https://yandex.ru/search/?text=${encodeURIComponent(query)}&numdoc=50`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    const j = await r.json();
+    const items = j.items || [];
+    for (let i = 0; i < items.length; i++) {
+      if ((items[i].link || '').includes(domain)) return { rank: i + 1, foundUrl: items[i].link };
     }
+    return { rank: null };
+  } catch (e) { return { rank: null, error: String(e).slice(0,80) }; }
+}
+
+async function rankViaYandexXML(query, domain) {
+  const user = process.env.YANDEX_XML_USER, key = process.env.YANDEX_XML_KEY;
+  if (!user || !key) return null;
+  const url = `https://yandex.ru/search/xml?user=${encodeURIComponent(user)}&key=${encodeURIComponent(key)}&query=${encodeURIComponent(query)}&l10n=ru&sortby=rlv&groupby=attr%3D.mode%3Ddeep.groups-on-page%3D10.docs-in-group%3D1`;
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    const xml = await r.text();
+    // Extract <url>…</url> sequence order
+    const urls = [...xml.matchAll(/<url>([^<]+)<\/url>/g)].map(m => m[1]);
+    for (let i = 0; i < urls.length; i++) {
+      if (urls[i].includes(domain)) return { rank: i + 1, foundUrl: urls[i] };
+    }
+    return { rank: null };
+  } catch (e) { return { rank: null, error: String(e).slice(0,80) }; }
+}
+
+async function rankViaDuckDuckGo(query, domain) {
+  try {
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
     const r = await fetchWithTiming(url, { timeout: 12000, headers: {
       'Accept': 'text/html,application/xhtml+xml',
       'Accept-Language': 'ru,en;q=0.9',
     }});
-    if (!r.text) return { engine, query, rank: null, error: 'no-response' };
-    // Find first occurrence of our domain in a link href.
-    const re = new RegExp(`href=["'](https?:\\/\\/(?:www\\.)?${domain.replace(/\./g, '\\.')}[^"']*)`, 'gi');
-    const matches = [...r.text.matchAll(re)];
-    if (!matches.length) return { engine, query, rank: null, foundUrl: null };
-    // Very rough: return position by unique URL order of appearance
+    if (!r.text) return { rank: null };
+    // DuckDuckGo wraps external links in /l/?uddg=<url>
+    const matches = [...r.text.matchAll(/uddg=([^"'&]+)/g)].map(m => decodeURIComponent(m[1]));
     const seen = new Set();
     let pos = 0;
-    for (const m of matches) {
-      const u = m[1].split('#')[0];
-      if (!seen.has(u)) { seen.add(u); pos++; }
-      if (u.includes(domain)) return { engine, query, rank: pos, foundUrl: u };
+    for (const u of matches) {
+      const clean = u.split('#')[0];
+      if (seen.has(clean)) continue;
+      seen.add(clean);
+      pos++;
+      if (clean.includes(domain)) return { rank: pos, foundUrl: clean };
     }
-    return { engine, query, rank: null };
-  } catch (e) {
-    return { engine, query, rank: null, error: String(e).slice(0, 100) };
+    return { rank: null };
+  } catch (e) { return { rank: null, error: String(e).slice(0,80) }; }
+}
+
+async function estimateRank(query, engine = 'google', domain = 'askhub.net') {
+  let res = null;
+  let source = 'none';
+  if (engine === 'google') {
+    res = await rankViaGoogleCSE(query, domain);
+    if (res) source = 'cse';
+    else { res = await rankViaDuckDuckGo(query, domain); source = 'ddg'; }
+  } else {
+    res = await rankViaYandexXML(query, domain);
+    if (res) source = 'xml';
+    else { res = await rankViaDuckDuckGo(query + ' site:.ru', domain); source = 'ddg'; }
   }
+  return { engine, query, source, rank: res?.rank ?? null, foundUrl: res?.foundUrl || null };
 }
 
 async function estimateIndexed(engine, domain) {
+  // Try APIs first, then fallback.
+  if (engine === 'google') {
+    const key = process.env.GOOGLE_CSE_KEY, cx = process.env.GOOGLE_CSE_ID;
+    if (key && cx) {
+      try {
+        const url = `https://www.googleapis.com/customsearch/v1?key=${key}&cx=${cx}&q=${encodeURIComponent('site:' + domain)}&num=1`;
+        const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+        const j = await r.json();
+        const total = parseInt(j?.searchInformation?.totalResults || 0, 10);
+        if (total) return total;
+      } catch {}
+    }
+  } else {
+    const user = process.env.YANDEX_XML_USER, key = process.env.YANDEX_XML_KEY;
+    if (user && key) {
+      try {
+        const url = `https://yandex.ru/search/xml?user=${encodeURIComponent(user)}&key=${encodeURIComponent(key)}&query=${encodeURIComponent('site:' + domain)}`;
+        const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+        const xml = await r.text();
+        const m = xml.match(/<found priority="phrase">(\d+)<\/found>/) || xml.match(/<found priority="all">(\d+)<\/found>/);
+        if (m) return parseInt(m[1], 10);
+      } catch {}
+    }
+  }
+  // DuckDuckGo fallback — approximate
   try {
     const q = `site:${domain}`;
-    const url = engine === 'google'
-      ? `https://www.google.com/search?q=${encodeURIComponent(q)}&hl=ru`
-      : `https://yandex.ru/search/?text=${encodeURIComponent(q)}`;
-    const r = await fetchWithTiming(url, { timeout: 12000 });
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+    const r = await fetchWithTiming(url, { timeout: 10000 });
     if (!r.text) return null;
-    // Google: "About X results". Yandex: "Нашлось X результатов"
-    let m;
-    if (engine === 'google') {
-      m = r.text.match(/About\s+([\d\s,\.]+)\s+results/i) || r.text.match(/Примерно\s+([\d\s,\.]+)\s+результ/i);
-    } else {
-      m = r.text.match(/Нашл[оа]сь\s+([\d\s\u00a0]+)\s+результ/i);
-    }
-    if (!m) return null;
-    return parseInt(m[1].replace(/[^\d]/g, ''), 10) || null;
+    const domainCount = (r.text.match(new RegExp(domain.replace(/\./g, '\\.'), 'g')) || []).length;
+    return domainCount > 0 ? domainCount : null;
   } catch { return null; }
 }
 
