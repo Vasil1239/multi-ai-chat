@@ -220,7 +220,9 @@ function buildReport(snap, prev) {
   const p = snap.pages;
   const errPages = p.filter(x => x.status !== 200);
   const slowPages = p.filter(x => x.ms > 2000);
-  const brokenAnalytics = p.filter(x => x.url.endsWith('.html') || x.url.endsWith('/'))
+  // Skip Google/Yandex verification stub files — they are plain-text markers, not user pages.
+  const isVerificationFile = (u) => /\/google[0-9a-f]+\.html$/i.test(u) || /\/yandex_[0-9a-f]+\.html$/i.test(u);
+  const brokenAnalytics = p.filter(x => (x.url.endsWith('.html') || x.url.endsWith('/')) && !isVerificationFile(x.url))
     .filter(x => x.status === 200 && (x.hasYm === false || x.hasGa === false));
   const missingSchema = p.filter(x => x.status === 200 && x.canonical !== null && x.hasSchema === false);
 
