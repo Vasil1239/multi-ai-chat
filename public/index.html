@@ -367,6 +367,7 @@ window.ASKHUB_I18N = {
   ru: {
     'nav.open_chat':'Открыть чат →',
     'nav.topup':'Пополнить',
+    'nav.blog':'Блог',
     'hero.badge':'10+ моделей ИИ в одном интерфейсе',
     'hero.title':'Один чат.<br><span class="grad">Все AI-модели.</span>',
     'hero.lead':'GPT, Claude, Gemini, Llama, DeepSeek — переключайтесь между лучшими моделями ИИ в одном окне. Бесплатные варианты без ограничений, платные — по цене копеек.',
@@ -407,7 +408,7 @@ window.ASKHUB_I18N = {
     'gate.email.btn':'Начать'
   },
   en: {
-    'nav.open_chat':'Open chat →','nav.topup':'Top up',
+    'nav.open_chat':'Open chat →','nav.topup':'Top up','nav.blog':'Blog',
     'hero.badge':'10+ AI models in one interface',
     'hero.title':'One chat.<br><span class="grad">All AI models.</span>',
     'hero.lead':'GPT, Claude, Gemini, Llama, DeepSeek — switch between the best AI models in a single window. Free tiers with no limits, paid ones for pennies.',
@@ -431,7 +432,7 @@ window.ASKHUB_I18N = {
     'gate.email.title':'Let’s chat','gate.email.sub':'Enter your email — it’s your identifier for saving credits. No password needed.','gate.email.btn':'Start'
   },
   sr: {
-    'nav.open_chat':'Otvori chat →','nav.topup':'Dopuni',
+    'nav.open_chat':'Otvori chat →','nav.topup':'Dopuni','nav.blog':'Blog',
     'hero.badge':'10+ AI modela u jednom interfejsu',
     'hero.title':'Jedan chat.<br><span class="grad">Svi AI modeli.</span>',
     'hero.lead':'GPT, Claude, Gemini, Llama, DeepSeek — prebacujte se između najboljih AI modela u jednom prozoru. Besplatne opcije bez ograničenja, plaćene — za pare.',
@@ -493,6 +494,7 @@ document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => window.setLang(b.getAttribute('data-lang'))));
 });
 </script>
+<script src="/analytics.js" defer></script>
 </head>
 <body>
 
@@ -508,6 +510,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <span class="pill credits-pill" id="credits-pill">— кредитов</span>
         <button class="pill primary" id="topup-toggle" data-i18n="nav.topup">Пополнить</button>
       </div>
+      <a href="/blog/" class="pill" id="nav-blog" data-i18n="nav.blog" style="padding:8px 12px;color:var(--ink-soft);font-weight:600">Блог</a>
       <a href="/chat.html" class="pill primary" id="start-cta" data-i18n="nav.open_chat" style="background:linear-gradient(135deg,#a78bfa,#22d3ee);color:#0a0a0f;font-weight:800">Открыть чат →</a>
       <div class="lang-switch" role="tablist" aria-label="Language" style="display:inline-flex;gap:2px;margin-left:8px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:2px">
         <button type="button" data-lang="ru" class="lang-btn" style="padding:5px 9px;border:0;background:transparent;color:var(--ink-soft);font-weight:700;font-size:12px;border-radius:8px;cursor:pointer">RU</button>

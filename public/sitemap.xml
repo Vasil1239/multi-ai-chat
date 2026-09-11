@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <url>
+    <loc>https://askhub.net/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://askhub.net/"/>
+  </url>
+
+  <url>
+    <loc>https://askhub.net/chat.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ============ БЛОГ: индексы ============ -->
+  <url>
+    <loc>https://askhub.net/blog/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/blog/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/blog/en/"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/blog/sr/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://askhub.net/blog/"/>
+  </url>
+  <url>
+    <loc>https://askhub.net/blog/en/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/blog/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/blog/en/"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/blog/sr/"/>
+  </url>
+  <url>
+    <loc>https://askhub.net/blog/sr/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/blog/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/blog/en/"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/blog/sr/"/>
+  </url>
+
+  <!-- ============ БЛОГ: статьи ============ -->
+  <url>
+    <loc>https://askhub.net/blog/gpt-vs-claude-vs-gemini-2026.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/blog/gpt-vs-claude-vs-gemini-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/blog/en/gpt-vs-claude-vs-gemini-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/blog/sr/gpt-vs-claude-vs-gemini-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://askhub.net/blog/gpt-vs-claude-vs-gemini-2026.html"/>
+  </url>
+  <url>
+    <loc>https://askhub.net/blog/en/gpt-vs-claude-vs-gemini-2026.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/blog/gpt-vs-claude-vs-gemini-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/blog/en/gpt-vs-claude-vs-gemini-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/blog/sr/gpt-vs-claude-vs-gemini-2026.html"/>
+  </url>
+  <url>
+    <loc>https://askhub.net/blog/sr/gpt-vs-claude-vs-gemini-2026.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/blog/gpt-vs-claude-vs-gemini-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/blog/en/gpt-vs-claude-vs-gemini-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/blog/sr/gpt-vs-claude-vs-gemini-2026.html"/>
+  </url>
+
+  <url>
+    <loc>https://askhub.net/blog/skolko-stoit-1000-tokenov-2026.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/blog/skolko-stoit-1000-tokenov-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/blog/en/ai-price-per-1000-tokens-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/blog/sr/koliko-kosta-1000-tokena-2026.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://askhub.net/blog/skolko-stoit-1000-tokenov-2026.html"/>
+  </url>
+  <url>
+    <loc>https://askhub.net/blog/en/ai-price-per-1000-tokens-2026.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://askhub.net/blog/sr/koliko-kosta-1000-tokena-2026.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://askhub.net/blog/promty-smeta-remonta-belgrad.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://askhub.net/blog/promty-smeta-remonta-belgrad.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://askhub.net/blog/en/ai-prompts-renovation-estimate-belgrade.html"/>
+    <xhtml:link rel="alternate" hreflang="sr" href="https://askhub.net/blog/sr/ai-promptovi-procena-renoviranja-beograd.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://askhub.net/blog/promty-smeta-remonta-belgrad.html"/>
+  </url>
+  <url>
+    <loc>https://askhub.net/blog/en/ai-prompts-renovation-estimate-belgrade.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://askhub.net/blog/sr/ai-promptovi-procena-renoviranja-beograd.html</loc>
+    <lastmod>2026-09-11</lastmod>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>

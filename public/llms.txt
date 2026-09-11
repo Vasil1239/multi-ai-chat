@@ -1,0 +1,20 @@
+# AskHub
+
+> Один чат — все AI‑модели. GPT, Claude, Gemini, Llama, DeepSeek, VIP интернет‑поиск в одном интерфейсе. Бесплатные модели без ограничений, платные — по цене копеек.
+
+## Основное
+- [Главная](https://askhub.net/): описание сервиса, тарифы, регистрация
+- [Чат](https://askhub.net/chat.html): рабочий интерфейс со всеми моделями
+- [Условия использования](https://askhub.net/legal.html)
+
+## Блог
+- [Индекс блога — RU](https://askhub.net/blog/)
+- [Blog index — EN](https://askhub.net/blog/en/)
+- [Blog indeks — SR](https://askhub.net/blog/sr/)
+
+## Языки
+Сайт доступен на трёх языках: русский (по умолчанию), английский, сербский (латиница).
+Языковые версии статей связаны атрибутами `hreflang`.
+
+## Контакт
+- Telegram: @askhub_support
