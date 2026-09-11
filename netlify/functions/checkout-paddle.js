@@ -66,7 +66,9 @@ exports.handler = async function (event) {
           unit_price: { currency_code: 'USD', amount: String(Math.round(parseFloat(p.amount) * 100)) },
           product: {
             name: p.label,
-            tax_category: 'digital-goods'
+            // 'standard' — единственная auto-approved категория. Для production
+            // рекомендуется 'saas' или 'digital-goods' (требуют approval через Paddle).
+            tax_category: 'standard'
           }
         }
       }];
