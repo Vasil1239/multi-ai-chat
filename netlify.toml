@@ -7,6 +7,11 @@
 [functions.image]
   timeout = 26
 
+# SEO мониторинг — ежедневная проверка, до 26 секунд.
+[functions."seo-monitor"]
+  timeout = 26
+  schedule = "0 6 * * *"  # 06:00 UTC = 08:00 Belgrade
+
 [[redirects]]
   from = "/api/chat"
   to = "/.netlify/functions/chat"
@@ -25,6 +30,11 @@
 [[redirects]]
   from = "/api/models"
   to = "/.netlify/functions/models"
+  status = 200
+
+[[redirects]]
+  from = "/api/seo-monitor"
+  to = "/.netlify/functions/seo-monitor"
   status = 200
 
 [[redirects]]
