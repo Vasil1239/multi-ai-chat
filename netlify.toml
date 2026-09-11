@@ -2,6 +2,12 @@
   functions = "netlify/functions"
   publish = "public"
 
+[build.environment]
+  # PADDLE_ENV имел generic-значение "sandbox", которое secret scanner находит в коде
+  # как литерал. Мы убрали её из env и определяем окружение по префиксу API-ключа.
+  # Оставляем в omit только её на случай оставшегося кеша Netlify UI.
+  SECRETS_SCAN_OMIT_KEYS = "PADDLE_ENV"
+
 # По умолчанию у sync-функций Netlify 10 сек. Для image.js это мало (Ultra ~25 сек).
 # Pro/Business план поддерживает до 26 сек через явное указание.
 [functions.image]

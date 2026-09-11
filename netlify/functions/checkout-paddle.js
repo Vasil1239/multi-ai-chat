@@ -2,7 +2,8 @@
 // Цены и кредиты синхронизированы с create-checkout.js (Stripe legacy) и позднее checkout-yookassa.js.
 // Маржа +150% сохранена (себестоимость → продажа). Валюта USD по умолчанию, Paddle сам конвертирует под страну.
 //
-// Env: PADDLE_API_KEY (Bearer), PADDLE_ENV = "sandbox" | "production"
+// Env: PADDLE_API_KEY (Bearer). Окружение (sandbox/production) определяется
+// автоматически по префиксу ключа: pdl_sdbx_* → sandbox, pdl_prd_* → production.
 // Env для маппинга price_id → creds: PADDLE_PRICE_PACK_S/M/L
 // Fallback: если price IDs не заданы — используем price_data через inline items
 
@@ -19,11 +20,12 @@ function checkAccessCode(event) {
   return provided === required;
 }
 
-function paddleBase() {
-  const env = (process.env.PADDLE_ENV || 'sandbox').toLowerCase();
-  return env === 'production'
-    ? 'https://api.paddle.com'
-    : 'https://sandbox-api.paddle.com';
+function paddleBase(apiKey) {
+  // Sandbox ключи начинаются с pdl_sdbx_, production — с pdl_prd_ (или пусто = production по умолчанию)
+  const isSandbox = (apiKey || '').startsWith('pdl_sdbx_');
+  return isSandbox
+    ? 'https://sandbox-api.paddle.com'
+    : 'https://api.paddle.com';
 }
 
 exports.handler = async function (event) {
@@ -88,7 +90,7 @@ exports.handler = async function (event) {
   };
 
   try {
-    const res = await fetch(paddleBase() + '/transactions', {
+    const res = await fetch(paddleBase(apiKey) + '/transactions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
