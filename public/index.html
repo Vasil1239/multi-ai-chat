@@ -364,7 +364,24 @@ footer a:hover{color:var(--ink)}
 /* ============ MOBILE OVERRIDES ============ */
 @media(max-width:640px){
   body{padding-top:env(safe-area-inset-top)}
-  .hero{padding:calc(56px + env(safe-area-inset-top)) 16px 24px !important}
+
+  /* NAV: компактная шапка с кнопкой Пополнить всегда видимой */
+  .nav-in{padding:10px 12px !important;gap:8px !important;flex-wrap:nowrap !important}
+  .brand{font-size:16px !important;gap:6px !important}
+  .brand-mark{width:26px !important;height:26px !important}
+  .nav-actions{gap:6px !important;flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .nav-actions::-webkit-scrollbar{display:none}
+  .nav-actions > *{flex-shrink:0}
+  .nav-actions .pill{padding:7px 11px !important;font-size:12.5px !important}
+  #credits-box{display:flex !important;gap:6px}
+  #credits-pill{display:none !important} /* прячем баланс на телефоне, оставляем только кнопку */
+  #topup-toggle{padding:8px 14px !important;font-size:13px !important;font-weight:800 !important;box-shadow:0 4px 14px rgba(124,92,255,.4) !important}
+  #nav-blog{display:none !important} /* блог убираем чтобы влезла Пополнить+Чат */
+  #start-cta{padding:8px 12px !important;font-size:12.5px !important}
+  .lang-switch{margin-left:4px !important}
+  .lang-btn{padding:4px 6px !important;font-size:11px !important}
+
+  .hero{padding:calc(28px + env(safe-area-inset-top)) 16px 24px !important}
   .hero-in{gap:28px !important}
   .hero h1{font-size:clamp(30px,8vw,42px) !important;margin:0 0 14px !important}
   .hero .lead{font-size:15.5px !important;line-height:1.5 !important;margin:0 0 20px !important}

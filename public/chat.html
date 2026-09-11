@@ -334,7 +334,8 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="mobile-topbar">
       <button class="hamb" id="hamb">☰</button>
       <a href="/" style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);color:var(--ink-soft);font-size:12px;font-weight:700;text-decoration:none" title="На главную">← Главная</a>
-      <a href="/" class="brand" style="flex:1;text-decoration:none;color:inherit;justify-content:flex-end" title="На главную"><span class="brand-mark"></span><span>AskHub</span></a>
+      <a href="/" class="brand" style="flex:1;text-decoration:none;color:inherit;justify-content:center" title="На главную"><span class="brand-mark"></span><span style="font-size:15px">AskHub</span></a>
+      <button id="mobile-topup-btn" onclick="openTopupModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#0a0a0f;border:none;border-radius:10px;padding:8px 12px;font-weight:800;font-size:12.5px;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px rgba(124,92,255,.35)">💳 Пополнить</button>
       <button class="new-btn" id="new-chat-btn-mob">＋</button>
     </div>
 
