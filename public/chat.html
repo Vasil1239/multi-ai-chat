@@ -802,6 +802,64 @@ chat.messages.push({role:'assistant',content:d.text||'(пустой ответ)'
   $('send-btn').disabled = false; $('input').focus();
 }
 
+
+// ============ Top-up modal ============
+function openTopupModal(){
+  let m = document.getElementById('topup-modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'topup-modal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+    m.innerHTML = `
+      <div style="max-width:520px;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;color:var(--ink);position:relative">
+        <button id="topup-close" style="position:absolute;top:10px;right:12px;background:transparent;border:0;color:var(--ink-mute);font-size:22px;cursor:pointer">×</button>
+        <h3 style="margin:0 0 4px;font-family:'Space Grotesk',sans-serif">Пополнить кредиты</h3>
+        <p style="margin:0 0 14px;color:var(--ink-mute);font-size:13px">1 000 кредитов ≈ $1. Оплата картой через LemonSqueezy.</p>
+        <div id="topup-packs" style="display:flex;flex-direction:column;gap:10px"></div>
+        <p id="topup-err" style="margin:10px 0 0;color:#ff8080;font-size:12px;min-height:14px"></p>
+      </div>`;
+    document.body.appendChild(m);
+    m.querySelector('#topup-close').onclick = () => m.remove();
+    m.onclick = (e) => { if (e.target === m) m.remove(); };
+    const PACKS = [
+      {id:'pack_s',label:'5 000 кредитов',price:'$5',note:'Стартер'},
+      {id:'pack_m',label:'20 000 кредитов',price:'$20',note:'Популярный'},
+      {id:'pack_l',label:'50 000 кредитов',price:'$50',note:'Максимум'}
+    ];
+    const wrap = m.querySelector('#topup-packs');
+    PACKS.forEach(p => {
+      const b = document.createElement('button');
+      b.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);border-radius:12px;cursor:pointer;font-size:14px;text-align:left';
+      b.innerHTML = `<span><b>${p.label}</b> <span style="color:var(--ink-mute);font-size:12px">· ${p.note}</span></span><span style="font-weight:800;color:var(--accent)">${p.price} →</span>`;
+      b.onmouseover = () => b.style.borderColor = 'var(--accent)';
+      b.onmouseout = () => b.style.borderColor = 'var(--line)';
+      b.onclick = () => buyPackFromChat(p.id, b);
+      wrap.appendChild(b);
+    });
+  }
+}
+async function buyPackFromChat(packId, btn){
+  const err = document.getElementById('topup-err'); if (err) err.textContent = '';
+  const origHtml = btn ? btn.innerHTML : ''; if (btn) { btn.disabled = true; btn.innerHTML = 'Открываю оплату…'; }
+  try {
+    const r = await fetch('/api/checkout', {
+      method:'POST',
+      headers: accessHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ user: state.userEmail, pack: packId })
+    });
+    if (r.status === 401) { showGate(); return; }
+    const d = await readJsonSafe(r);
+    const url = d.checkout_url || d.url;
+    if (url) { window.location.href = url; return; }
+    if (err) err.textContent = 'Не удалось создать оплату: ' + (d.error || ('HTTP '+r.status));
+  } catch(e) {
+    if (err) err.textContent = 'Сеть: ' + (e?.message || 'ошибка');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+  }
+}
+window.openTopupModal = openTopupModal;
+
 // ============ Brief → Image ============
 async function generateFromBrief(msgIdx, quality) {
   quality = quality || 'ultra';
@@ -893,7 +951,7 @@ function copyReferralLink() {
 }
 
 // ============ Top-up (redirect to home) ============
-$('topup-link').onclick = () => { window.location.href = '/#топ-ап'; };
+$('topup-link').onclick = () => openTopupModal();
 $('logout-link').onclick = () => {
   if (!confirm('Выйти? История чатов останется в браузере.')) return;
   localStorage.removeItem('multi_user_email'); location.reload();
