@@ -13,15 +13,19 @@
 const { getCredits, saveCredits } = require('./_store');
 const { logEvent } = require('./_analytics');
 
-const COST_USD = { basic: 0.005, ai: 0.30 };
+const COST_USD = { basic: 0.005, ai: 0.30, text: 0.20 };
 const VIDEO_COST_BASIC = 200;   // $0.005 → $0.20 (safe margin, entry tier)
-const VIDEO_COST_AI    = 800;   // $0.30  → $0.80 (+167% net)
+const VIDEO_COST_AI    = 800;   // $0.30  → $0.80 (+167% net) — image-to-video
+const VIDEO_COST_TEXT  = 600;   // $0.20  → $0.60 (+200% net) — text-to-video
 
 // Replicate model versions (updated 2026):
 //   Kling 1.6 Standard image-to-video (5s, 720p): kwaivgi/kling-v1.6-standard
-//   Runway Gen-3 Alpha Turbo: runwayml/gen3a-turbo (fallback)
+//   Runway Gen-3 Alpha Turbo: runwayml/gen3a-turbo (fallback image-to-video)
+//   Text-to-video: Wan 2.2 (wavespeedai) fallback → Kling text-to-video
 const REPLICATE_KLING = 'kwaivgi/kling-v1.6-standard';
 const REPLICATE_RUNWAY = 'runwayml/gen3a-turbo';
+const REPLICATE_KLING_T2V = 'kwaivgi/kling-v2.1';   // text-to-video (5s, 720p)
+const REPLICATE_WAN_T2V = 'wavespeedai/wan-2.2-t2v-fast'; // fallback text-to-video
 
 function json(status, body) {
   return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
@@ -146,6 +150,46 @@ async function generateAIVideo(imageB64, prompt) {
   throw new Error(`Replicate failed: ${lastErr}`);
 }
 
+// ---------- TEXT-TO-VIDEO ----------
+async function generateTextVideo(prompt) {
+  const token = process.env.REPLICATE_API_TOKEN;
+  if (!token) throw new Error('REPLICATE_API_TOKEN not set');
+  if (!prompt || !prompt.trim()) throw new Error('empty_prompt');
+
+  const attempts = [
+    { name: 'kling-t2v', model: REPLICATE_KLING_T2V, input: { prompt: prompt.slice(0, 500), duration: 5, aspect_ratio: '16:9' } },
+    { name: 'wan-t2v', model: REPLICATE_WAN_T2V, input: { prompt: prompt.slice(0, 500), num_frames: 81, aspect_ratio: '16:9' } },
+  ];
+
+  let lastErr = null;
+  for (const a of attempts) {
+    try {
+      const createRes = await fetch(`https://api.replicate.com/v1/models/${a.model}/predictions`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'wait=25' },
+        body: JSON.stringify({ input: a.input }),
+      });
+      const pred = await createRes.json();
+      if (!createRes.ok) { lastErr = pred?.detail || `HTTP ${createRes.status}`; continue; }
+      let final = pred;
+      const deadline = Date.now() + 20000;
+      while (final.status !== 'succeeded' && final.status !== 'failed' && final.status !== 'canceled' && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 2500));
+        const poll = await fetch(final.urls.get, { headers: { Authorization: `Bearer ${token}` } });
+        final = await poll.json();
+      }
+      if (final.status === 'succeeded') {
+        const videoUrl = Array.isArray(final.output) ? final.output[0] : final.output;
+        return { videoUrl, provider: a.name };
+      }
+      lastErr = final.error || `status=${final.status}`;
+    } catch (e) {
+      lastErr = String(e).slice(0, 200);
+    }
+  }
+  throw new Error(`text-to-video failed: ${lastErr}`);
+}
+
 // ---------- HANDLER ----------
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
@@ -153,10 +197,17 @@ exports.handler = async (event) => {
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'bad_json' }); }
-  const { user, tier = 'basic', photos, image, prompt } = body;
+  let { user, tier = 'basic', photos, image, prompt } = body;
   if (!user) return json(400, { error: 'missing_user' });
 
-  const cost = tier === 'ai' ? VIDEO_COST_AI : VIDEO_COST_BASIC;
+  // Автоматически выбираем tier если не указан явно: prompt+нет фото → text; фото есть → ai/basic
+  if (!body.tier) {
+    if (image) tier = 'ai';
+    else if (Array.isArray(photos) && photos.length >= 2) tier = 'basic';
+    else if (prompt && prompt.trim()) tier = 'text';
+  }
+
+  const cost = tier === 'ai' ? VIDEO_COST_AI : (tier === 'text' ? VIDEO_COST_TEXT : VIDEO_COST_BASIC);
 
   // Credits check
   let record = await getCredits(user);
@@ -177,9 +228,13 @@ exports.handler = async (event) => {
       const slideshow = await generateSlideshow(photos);
       result = { tier: 'basic', videoB64: slideshow.videoB64, sizeBytes: slideshow.sizeBytes, durationSec: slideshow.durationSec, provider: 'ffmpeg-slideshow' };
     } else if (tier === 'ai') {
-      if (!image) return json(400, { error: 'missing_image' });
+      if (!image) return json(400, { error: 'missing_image', message: 'AI-оживление требует одну картинку. Загрузите фото или используйте режим Text (только текст).' });
       const ai = await generateAIVideo(image, prompt);
       result = { tier: 'ai', videoUrl: ai.videoUrl, provider: ai.provider };
+    } else if (tier === 'text') {
+      if (!prompt || !prompt.trim()) return json(400, { error: 'missing_prompt', message: 'Text-to-video требует описание. Напишите что показать на видео.' });
+      const tv = await generateTextVideo(prompt);
+      result = { tier: 'text', videoUrl: tv.videoUrl, provider: tv.provider };
     } else {
       return json(400, { error: 'unknown_tier' });
     }
