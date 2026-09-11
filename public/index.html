@@ -361,6 +361,9 @@ footer a:hover{color:var(--ink)}
 .quota-bar-fill.out{background:#ff7373}
 .quota-cta{margin-top:8px;font-size:12.5px;color:var(--ink-mute)}
 .quota-cta a{color:var(--accent);cursor:pointer;text-decoration:underline;font-weight:600}
+/* Скрыть бейдж «Powered by Netlify» */
+[class*="powered-by"],[id*="powered-by"],iframe[src*="netlify"],a[href*="netlify.com"][target="_blank"]{display:none !important;visibility:hidden !important;pointer-events:none !important}
+
 /* ============ MOBILE OVERRIDES ============ */
 @media(max-width:640px){
   body{padding-top:env(safe-area-inset-top)}
