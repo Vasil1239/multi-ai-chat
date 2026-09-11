@@ -5,8 +5,8 @@
    ============================================================ */
 (function () {
   // === НАСТРОЙКА: замените значения после регистрации счётчиков ===
-  var YM_ID = window.ASKHUB_YM_ID || null;   // например 98765432
-  var GA_ID = window.ASKHUB_GA_ID || null;   // например 'G-XXXXXXXXXX'
+  var YM_ID = window.ASKHUB_YM_ID || 112491194;         // Яндекс.Метрика AskHub
+  var GA_ID = window.ASKHUB_GA_ID || 'G-DYJFJLCW9B';    // GA4 AskHub
   // ================================================================
 
   // --- GDPR: проверяем согласие в ЕС ---
