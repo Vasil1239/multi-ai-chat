@@ -19,9 +19,10 @@ const COST_USD = { standard: 0.04, hd: 0.06, ultra: 0.20 };
 const FREE_TRIAL_DAYS = 7;
 const FREE_IMAGES_PER_DAY = 3;
 
-const IMAGE_COST_STANDARD = 65;   // Gemini 2.5 Flash Image  ~$0.04 → 65 кр = $0.065 → маржа ~62%
-const IMAGE_COST_HD       = 150;  // Gemini 3.1 Flash Image  ~$0.06 → маржа ~60%
-const IMAGE_COST_ULTRA    = 300;  // Gemini 3 Pro Image      ~$0.20 → маржа ~33%
+// Цель: ≥150% чистой прибыли (выручка ≥ ×2.5 к себестоимости).
+const IMAGE_COST_STANDARD = 100;  // Gemini 2.5 Flash Image  $0.04 → 100 кр = $0.10 → маржа +150%
+const IMAGE_COST_HD       = 150;  // Gemini 3.1 Flash Image  $0.06 → 150 кр = $0.15 → маржа +150%
+const IMAGE_COST_ULTRA    = 500;  // Gemini 3 Pro Image      $0.20 → 500 кр = $0.50 → маржа +150%
 
 const MODEL_STANDARD = 'google/gemini-2.5-flash-image';
 const MODEL_HD       = 'google/gemini-3.1-flash-image';
