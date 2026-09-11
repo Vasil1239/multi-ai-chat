@@ -1,5 +1,6 @@
 const Stripe = require('stripe');
 const { getStore } = require('@netlify/blobs');
+const { logEvent } = require('./_analytics');
 
 // In-memory fallback store: используется если Netlify Blobs недоступен
 const _memStore = new Map();
@@ -57,6 +58,18 @@ exports.handler = async function (event) {
       if (!record) record = { credits: 0 };
       record.credits += credits;
       await store.setJSON(user, record);
+
+      // Аналитика — выручка от Stripe (amount_total в центах)
+      const amount = (session.amount_total || 0) / 100;
+      logEvent({
+        user_email: user,
+        kind: 'topup',
+        model: session.metadata?.pack || null,
+        credits_charged: credits,
+        cost_usd: amount * 0.029 + 0.30, // Stripe fee оценка
+        revenue_usd: amount,
+        meta: { session_id: session.id, currency: session.currency },
+      }).catch(() => {});
     }
   }
 

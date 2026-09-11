@@ -1,4 +1,5 @@
 const { getCredits, saveCredits } = require('./_store');
+const { logEvent } = require('./_analytics');
 
 const CREDIT_VALUE_USD = 0.0001; // 1 кредит = $0.0001 реальной стоимости OpenRouter. Пользователь покупает кредит за $0.001 → маржа ×10
 const MIN_CREDITS_PER_MESSAGE = 1; // минимум для любой платной модели, даже если токенов было мало
@@ -177,7 +178,10 @@ exports.handler = async function (event) {
     }
 
     let creditsCharged = 0;
+    let costUsdLogged = 0;
+    let usageLogged = {};
     let newFreeUsed = freeUsedToday;
+    const routedIdEarly = data.model || model;
     if (isFree) {
       newFreeUsed = freeUsedToday + 1;
       record = await saveCredits(user, {
@@ -186,18 +190,31 @@ exports.handler = async function (event) {
         free_used_today: newFreeUsed,
       });
     } else {
-      const routedId = data.model || model;
-      const price = pricing.get(routedId) || pricing.get(model) || { prompt: 0, completion: 0 };
+      const price = pricing.get(routedIdEarly) || pricing.get(model) || { prompt: 0, completion: 0 };
       const usage = data.usage || {};
-      const costUsd =
+      usageLogged = usage;
+      costUsdLogged =
         (usage.prompt_tokens || 0) * price.prompt +
         (usage.completion_tokens || 0) * price.completion;
-      creditsCharged = Math.max(MIN_CREDITS_PER_MESSAGE, Math.ceil(costUsd / CREDIT_VALUE_USD));
+      creditsCharged = Math.max(MIN_CREDITS_PER_MESSAGE, Math.ceil(costUsdLogged / CREDIT_VALUE_USD));
       record = await saveCredits(user, { credits: record.credits - creditsCharged });
     }
 
     const text = data.choices?.[0]?.message?.content || '';
     const routedModel = data.model || model;
+
+    // Аналитика — fire-and-forget
+    logEvent({
+      user_email: user,
+      kind: 'chat',
+      model: routedModel,
+      is_free: isFree,
+      credits_charged: creditsCharged,
+      cost_usd: costUsdLogged,
+      revenue_usd: creditsCharged * 0.001,
+      prompt_tokens: usageLogged.prompt_tokens || null,
+      completion_tokens: usageLogged.completion_tokens || null,
+    }).catch(() => {});
 
     return json(200, {
       text,

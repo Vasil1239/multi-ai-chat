@@ -11,11 +11,15 @@
 // HD и Ultra всегда платные.
 
 const { getCredits, saveCredits } = require('./_store');
+const { logEvent } = require('./_analytics');
+
+// Ориентировочные цены OpenRouter за картинку
+const COST_USD = { standard: 0.04, hd: 0.06, ultra: 0.20 };
 
 const FREE_TRIAL_DAYS = 7;
 const FREE_IMAGES_PER_DAY = 3;
 
-const IMAGE_COST_STANDARD = 50;   // Gemini 2.5 Flash Image  ~$0.04 → маржа ~92%
+const IMAGE_COST_STANDARD = 65;   // Gemini 2.5 Flash Image  ~$0.04 → 65 кр = $0.065 → маржа ~62%
 const IMAGE_COST_HD       = 150;  // Gemini 3.1 Flash Image  ~$0.06 → маржа ~60%
 const IMAGE_COST_ULTRA    = 300;  // Gemini 3 Pro Image      ~$0.20 → маржа ~33%
 
@@ -92,6 +96,16 @@ async function generateWithOpenRouter({ prompt, model }) {
 
   const usedModel = model || MODEL_STANDARD;
 
+  // Nano Banana Pro (gemini-3-pro-image) требует включённый reasoning в запросе
+  const reqBody = {
+    model: usedModel,
+    modalities: ['image', 'text'],
+    messages: [{ role: 'user', content: prompt }],
+  };
+  if (usedModel === MODEL_ULTRA) {
+    reqBody.reasoning = { enabled: true };
+  }
+
   const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -100,11 +114,7 @@ async function generateWithOpenRouter({ prompt, model }) {
       'HTTP-Referer': process.env.URL || 'https://askhub.net',
       'X-Title': 'AskHub Image',
     },
-    body: JSON.stringify({
-      model: usedModel,
-      modalities: ['image', 'text'],
-      messages: [{ role: 'user', content: prompt }],
-    }),
+    body: JSON.stringify(reqBody),
   }, 120000);
 
   const raw = await res.text();
@@ -118,24 +128,69 @@ async function generateWithOpenRouter({ prompt, model }) {
   }
 
   const msg = data?.choices?.[0]?.message;
-  const imgArr = msg?.images;
-  if (Array.isArray(imgArr) && imgArr.length) {
-    const first = imgArr[0];
-    const url = first?.image_url?.url || first?.url || first;
-    if (typeof url === 'string' && url.startsWith('data:image')) {
-      const b64 = url.split(',')[1];
-      return { imageB64: b64, provider: `openrouter:${usedModel}` };
+
+  // Пробуем все известные поля, где разные модели кладут картинку
+  const tryExtract = (raw) => {
+    if (!raw) return null;
+    if (typeof raw === 'string') {
+      if (raw.startsWith('data:image')) return { imageB64: raw.split(',')[1] };
+      if (/^https?:\/\//.test(raw)) return { imageUrl: raw };
+      // Nano Banana Pro иногда возвращает чистый base64 без префикса
+      if (/^[A-Za-z0-9+/=]{500,}$/.test(raw)) return { imageB64: raw };
+      return null;
     }
-    if (typeof url === 'string') return { imageUrl: url, provider: `openrouter:${usedModel}` };
+    if (raw.image_url?.url) return tryExtract(raw.image_url.url);
+    if (raw.b64_json)      return { imageB64: raw.b64_json };
+    if (raw.url)           return tryExtract(raw.url);
+    if (raw.image)         return tryExtract(raw.image);
+    if (raw.data)          return tryExtract(raw.data);
+    if (raw.source?.data)  return { imageB64: raw.source.data };
+    return null;
+  };
+
+  // 1) message.images: [...]
+  if (Array.isArray(msg?.images)) {
+    for (const it of msg.images) {
+      const e = tryExtract(it);
+      if (e) return { ...e, provider: `openrouter:${usedModel}` };
+    }
   }
+  // 2) message.content: [...parts...] (multimodal)
   if (Array.isArray(msg?.content)) {
     for (const p of msg.content) {
       if (p?.type === 'image_url' && p.image_url?.url) {
-        return { imageUrl: p.image_url.url, provider: `openrouter:${usedModel}` };
+        const e = tryExtract(p.image_url.url);
+        if (e) return { ...e, provider: `openrouter:${usedModel}` };
+      }
+      if (p?.type === 'image' && (p.source?.data || p.image?.url)) {
+        const e = tryExtract(p.source?.data ? { b64_json: p.source.data } : p.image.url);
+        if (e) return { ...e, provider: `openrouter:${usedModel}` };
+      }
+      if (p?.type === 'output_image' && p.image_data) {
+        return { imageB64: p.image_data, provider: `openrouter:${usedModel}` };
       }
     }
   }
-  throw new Error('OpenRouter не вернул картинку (модель может не поддерживать генерацию).');
+  // 3) message.content: строка с markdown-картинкой ![](data:image...) или ![](https://...)
+  if (typeof msg?.content === 'string') {
+    const md = msg.content.match(/!\[[^\]]*\]\((data:image[^)]+|https?:\/\/[^)]+)\)/);
+    if (md) {
+      const e = tryExtract(md[1]);
+      if (e) return { ...e, provider: `openrouter:${usedModel}` };
+    }
+    // голый base64 в тексте — как fallback
+    const e = tryExtract(msg.content);
+    if (e) return { ...e, provider: `openrouter:${usedModel}` };
+  }
+
+  // Для отладки: выкинем ключи ответа, чтобы видеть, где модель положила картинку
+  const dump = {
+    msgKeys: msg ? Object.keys(msg) : [],
+    contentType: Array.isArray(msg?.content) ? 'array' : typeof msg?.content,
+    contentPreview: typeof msg?.content === 'string' ? msg.content.slice(0, 200) : undefined,
+    finish: data?.choices?.[0]?.finish_reason,
+  };
+  throw new Error('OpenRouter не вернул картинку. Debug: ' + JSON.stringify(dump));
 }
 
 function resolveTier({ quality, model }) {
@@ -236,6 +291,18 @@ exports.handler = async function (event) {
       img_day: todayKey,
       img_used_today: newImgUsed,
     });
+
+    // Аналитика
+    logEvent({
+      user_email: user,
+      kind: 'image',
+      model: 'image:' + tier,
+      is_free: useFree,
+      credits_charged: creditsCharged,
+      cost_usd: COST_USD[tier] || 0,
+      revenue_usd: creditsCharged * 0.001,
+      meta: { routedModel, trial: inTrial },
+    }).catch(() => {});
 
     return json(200, {
       ...result,
