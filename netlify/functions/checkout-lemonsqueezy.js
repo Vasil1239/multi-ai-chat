@@ -80,7 +80,7 @@ exports.handler = async function (event) {
             user_email: user,
             credits: String(p.credits),
             pack,
-            ref_code: refCode || '',
+            ref_code: String(refCode || 'none'),
             source: 'askhub_web'
           }
         },
