@@ -322,6 +322,44 @@ footer a:hover{color:var(--ink)}
 /* Simple animations */
 .fade-in{opacity:0;transform:translateY(20px);animation:fadeIn .8s ease forwards}
 @keyframes fadeIn{to{opacity:1;transform:translateY(0)}}
+
+/* ===== NEW: model picker, free quota bar, chat history sidebar ===== */
+.chat-layout{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
+@media(max-width:820px){.chat-layout{grid-template-columns:1fr}.chat-sidebar{max-height:200px;overflow-y:auto}}
+.chat-sidebar{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:12px}
+.chat-sidebar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.chat-sidebar-head h4{font-family:'Space Grotesk',sans-serif;font-size:13px;margin:0;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
+.chat-new-btn{background:var(--panel-2);color:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.chat-new-btn:hover{border-color:var(--accent)}
+.chat-list{display:flex;flex-direction:column;gap:4px}
+.chat-item{background:transparent;border:1px solid transparent;border-radius:10px;padding:9px 10px;color:var(--ink-soft);font-size:13px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:6px;overflow:hidden}
+.chat-item:hover{background:var(--panel-2);color:var(--ink)}
+.chat-item.active{background:var(--panel-2);color:var(--ink);border-color:var(--line-strong)}
+.chat-item-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-item-del{background:none;border:none;color:var(--ink-mute);cursor:pointer;font-size:16px;padding:0 4px;opacity:0;transition:.15s;line-height:1}
+.chat-item:hover .chat-item-del{opacity:1}
+.chat-item-del:hover{color:var(--danger)}
+.chat-empty{color:var(--ink-mute);font-size:12px;padding:12px 6px;text-align:center}
+
+.model-picker{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px;margin-bottom:14px;flex-wrap:wrap}
+.model-picker label{font-size:12px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.05em;font-family:'Space Grotesk',sans-serif;font-weight:600}
+.model-picker select{flex:1;min-width:200px;background:var(--panel-2);color:var(--ink);border:1px solid var(--line-strong);border-radius:10px;padding:9px 12px;font-size:14px;font-family:inherit;cursor:pointer}
+.model-picker select:focus{outline:none;border-color:var(--accent)}
+.model-picker .model-price{font-size:12px;color:var(--ink-soft);white-space:nowrap;font-family:'Space Grotesk',sans-serif}
+.model-picker .model-price b{color:#86efac;font-weight:700}
+.model-picker .model-price.paid b{color:#c4b5ff}
+
+.quota-bar{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+.quota-bar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--ink-soft);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12.5px}
+.quota-bar-head .quota-tag{color:#86efac}
+.quota-bar-head .quota-tag.low{color:#f59e0b}
+.quota-bar-head .quota-tag.out{color:#ff7373}
+.quota-bar-track{height:6px;background:var(--panel-2);border-radius:100px;overflow:hidden}
+.quota-bar-fill{height:100%;background:linear-gradient(90deg,#4ade80,#22d3ee);border-radius:100px;transition:width .3s}
+.quota-bar-fill.low{background:linear-gradient(90deg,#f59e0b,#f97316)}
+.quota-bar-fill.out{background:#ff7373}
+.quota-cta{margin-top:8px;font-size:12.5px;color:var(--ink-mute)}
+.quota-cta a{color:var(--accent);cursor:pointer;text-decoration:underline;font-weight:600}
 </style>
 </head>
 <body>
@@ -513,25 +551,53 @@ footer a:hover{color:var(--ink)}
   <div class="topup-panel" id="topup-panel"></div>
 
   <div id="chat" style="display:none;">
-    <div class="mode-toggle">
-      <button class="mode-btn active" data-mode="free" id="mode-free">🆓 Бесплатный режим</button>
-      <button class="mode-btn" data-mode="paid" id="mode-paid">⚡ Премиум-модели</button>
-      <button class="mode-btn" data-mode="image" id="mode-image">🎨 Изображение</button>
-    </div>
-    <p class="mode-hint" id="mode-hint">Бесплатный режим: без списаний, любая доступная free-модель.</p>
-    <div id="image-quality-toggle" style="display:none;margin:8px 0;font-size:14px;line-height:1.9;">
-      <label style="margin-right:14px;cursor:pointer;"><input type="radio" name="imgq" value="standard" checked> Стандарт · Gemini 2.5 · 50 кред</label>
-      <label style="margin-right:14px;cursor:pointer;"><input type="radio" name="imgq" value="hd"> HD · Nano Banana 2 · 150 кред</label>
-      <label style="cursor:pointer;"><input type="radio" name="imgq" value="ultra"> Ultra · Nano Banana Pro · инфографика · 300 кред</label>
-    </div>
+    <div class="chat-layout">
+      <aside class="chat-sidebar">
+        <div class="chat-sidebar-head">
+          <h4>Мои чаты</h4>
+          <button class="chat-new-btn" id="chat-new-btn" title="Новый чат">+ Новый</button>
+        </div>
+        <div class="chat-list" id="chat-list"></div>
+      </aside>
 
-    <div class="thread" id="thread">
-      <p class="empty-state">Задайте вопрос — и получите ответ от AI-модели.</p>
-    </div>
+      <div>
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="free" id="mode-free">🆓 Бесплатный</button>
+          <button class="mode-btn" data-mode="paid" id="mode-paid">⚡ Платные модели</button>
+          <button class="mode-btn" data-mode="image" id="mode-image">🎨 Картинка</button>
+        </div>
+        <p class="mode-hint" id="mode-hint">Бесплатный режим — до 30 сообщений в сутки.</p>
 
-    <div class="composer">
-      <textarea id="input" placeholder="Спросите что угодно…" rows="1"></textarea>
-      <button id="send">Отправить</button>
+        <div class="model-picker" id="model-picker">
+          <label for="model-select">Модель</label>
+          <select id="model-select"></select>
+          <span class="model-price" id="model-price"></span>
+        </div>
+
+        <div class="quota-bar" id="quota-bar" style="display:none;">
+          <div class="quota-bar-head">
+            <span>Бесплатные сообщения сегодня</span>
+            <span class="quota-tag" id="quota-tag">—</span>
+          </div>
+          <div class="quota-bar-track"><div class="quota-bar-fill" id="quota-fill" style="width:100%"></div></div>
+          <p class="quota-cta" id="quota-cta" style="display:none;">Лимит бесплатных сообщений на сегодня исчерпан. <a id="quota-switch-paid">Перейти на платные модели →</a></p>
+        </div>
+
+        <div id="image-quality-toggle" style="display:none;margin:8px 0;font-size:14px;line-height:1.9;">
+          <label style="margin-right:14px;cursor:pointer;"><input type="radio" name="imgq" value="standard" checked> Стандарт · Gemini 2.5 · 50 кред</label>
+          <label style="margin-right:14px;cursor:pointer;"><input type="radio" name="imgq" value="hd"> HD · Nano Banana 2 · 150 кред</label>
+          <label style="cursor:pointer;"><input type="radio" name="imgq" value="ultra"> Ultra · Nano Banana Pro · инфографика · 300 кред</label>
+        </div>
+
+        <div class="thread" id="thread">
+          <p class="empty-state">Задайте вопрос — и получите ответ от AI-модели.</p>
+        </div>
+
+        <div class="composer">
+          <textarea id="input" placeholder="Спросите что угодно…" rows="1"></textarea>
+          <button id="send">Отправить</button>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -561,33 +627,83 @@ footer a:hover{color:var(--ink)}
     {id:'pack_m',label:'22 000 кредитов',price:'$20',note:'+10% бонус'},
     {id:'pack_l',label:'60 000 кредитов',price:'$50',note:'+20% бонус'}
   ];
-  const MODE_MODEL={
-    free:{id:'openrouter/free',label:'Бесплатная модель',free:true},
-    paid:{id:'openrouter/auto',label:'Авто (лучшая под запрос)',free:false},
-    image:{id:'google/gemini-2.5-flash-image',label:'Генератор изображений',free:false}
+  // Каталог моделей: бесплатные + платные
+  // Цена — ориентир по OpenRouter (вход+выход за 1M токенов).
+  const MODELS={
+    free:[
+      {id:'meta-llama/llama-3.3-70b-instruct:free',label:'Llama 3.3 70B',vendor:'Meta',free:true},
+      {id:'deepseek/deepseek-chat-v3.1:free',label:'DeepSeek V3.1',vendor:'DeepSeek',free:true},
+      {id:'google/gemini-2.5-flash:free',label:'Gemini 2.5 Flash',vendor:'Google',free:true},
+      {id:'qwen/qwen-2.5-72b-instruct:free',label:'Qwen 2.5 72B',vendor:'Alibaba',free:true},
+      {id:'openrouter/auto:free',label:'Авто (лучшая free)',vendor:'OpenRouter',free:true}
+    ],
+    paid:[
+      {id:'openai/gpt-5',label:'GPT-5',vendor:'OpenAI',free:false,priceHint:'премиум'},
+      {id:'anthropic/claude-3.5-sonnet',label:'Claude 3.5 Sonnet',vendor:'Anthropic',free:false,priceHint:'премиум'},
+      {id:'google/gemini-2.5-pro',label:'Gemini 2.5 Pro',vendor:'Google',free:false,priceHint:'стандарт'},
+      {id:'openai/gpt-5-mini',label:'GPT-5 mini',vendor:'OpenAI',free:false,priceHint:'эконом'},
+      {id:'deepseek/deepseek-chat-v3.1',label:'DeepSeek V3.1',vendor:'DeepSeek',free:false,priceHint:'эконом'},
+      {id:'meta-llama/llama-3.3-70b-instruct',label:'Llama 3.3 70B',vendor:'Meta',free:false,priceHint:'эконом'},
+      {id:'openrouter/auto',label:'Авто (лучшая платная)',vendor:'OpenRouter',free:false,priceHint:'авто'}
+    ]
   };
   const MODE_HINTS={
-    free:'Бесплатный режим: без списаний, любая доступная free-модель.',
-    paid:'Премиум-режим: система выбирает лучшую модель под ваш запрос. Списывается по кредитам.',
-    image:'Режим генерации картинок. 5 картинок в день — бесплатно (не накапливаются), далее 50 кредитов за штуку.'
+    free:'Бесплатные модели — до 30 сообщений в сутки. Когда лимит кончается — переключитесь на платные модели.',
+    paid:'Платные модели: выбирайте конкретную или включите Авто. Списывается только за фактически использованные токены.',
+    image:'Генерация картинок. 3 стандартных в сутки — бесплатно (в trial), HD/Ultra — по кредитам.'
   };
 
   // Эвристика: похоже ли сообщение на просьбу нарисовать/сгенерировать картинку
   const IMAGE_HINTS=/(нарису|сгенериру[йи]|сдела[йи]\s+(фото|картинк|изображени|постер|баннер|логотип|инфографик)|drawing|generate\s+(image|photo|picture)|нужн[аоыя]?\s+картинк|создай\s+изображ|нарисова)/i;
 
   let mode='free';
-  let activeModel=MODE_MODEL.free;
-  let history=[];
+  let activeModel=MODELS.free[0];
   let userEmail=null;
   let credits=null;
+  let freeLeftToday=null;
+  let freeQuotaDaily=30;
   let accessCode=localStorage.getItem('multi_access_code')||'';
+
+  // многочатовая история в localStorage
+  const CHATS_KEY='askhub_chats_v1';
+  const ACTIVE_CHAT_KEY='askhub_active_chat_v1';
+  let chats={};       // {chatId: {id, title, updated_at, messages:[]}}
+  let activeChatId=null;
+  function loadChats(){try{chats=JSON.parse(localStorage.getItem(CHATS_KEY)||'{}')||{}}catch(_){chats={}}}
+  function saveChats(){try{localStorage.setItem(CHATS_KEY,JSON.stringify(chats))}catch(_){}}
+  function chatList(){return Object.values(chats).sort((a,b)=>(b.updated_at||0)-(a.updated_at||0))}
+  function currentChat(){if(!activeChatId||!chats[activeChatId])return null;return chats[activeChatId]}
+  function newChat(){const id='c_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);chats[id]={id,title:'Новый чат',updated_at:Date.now(),messages:[]};activeChatId=id;localStorage.setItem(ACTIVE_CHAT_KEY,id);saveChats();return chats[id]}
+  function ensureActiveChat(){if(!activeChatId||!chats[activeChatId]){const saved=localStorage.getItem(ACTIVE_CHAT_KEY);if(saved&&chats[saved])activeChatId=saved;else newChat()}}
+  function history(){return currentChat()?currentChat().messages:[]}
+  function pushMsg(m){const c=currentChat();if(!c)return;c.messages.push(m);c.updated_at=Date.now();if(m.role==='user'&&(c.title==='Новый чат'||!c.title)){c.title=(m.content||'').slice(0,40)||'Чат'}saveChats();renderChatList()}
+  function popMsg(){const c=currentChat();if(!c||!c.messages.length)return;c.messages.pop();saveChats()}
 
   const $=id=>document.getElementById(id);
   const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const accessHeaders=e=>{const h=Object.assign({},e||{});if(accessCode)h['X-Access-Code']=accessCode;return h};
 
+  function populateModelSelect(){
+    const sel=$('model-select');if(!sel)return;
+    sel.innerHTML='';
+    if(mode==='image'){sel.parentElement.style.display='none';return}
+    sel.parentElement.style.display='flex';
+    const opts=mode==='paid'?MODELS.paid:MODELS.free;
+    opts.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.vendor+' — '+m.label;sel.appendChild(o)});
+    // восстановить выбранную модель
+    const savedKey='askhub_model_'+mode;const saved=localStorage.getItem(savedKey);
+    if(saved && opts.find(m=>m.id===saved)){sel.value=saved;activeModel=opts.find(m=>m.id===saved)}
+    else{activeModel=opts[0];sel.value=opts[0].id}
+    updateModelPriceTag();
+  }
+  function updateModelPriceTag(){
+    const el=$('model-price');if(!el)return;
+    if(activeModel.free){el.className='model-price';el.innerHTML='<b>бесплатно</b> · лимит 30/сутки'}
+    else{el.className='model-price paid';el.innerHTML='<b>платно</b> · '+(activeModel.priceHint||'по токенам')}
+  }
+
   function setMode(m){
-    mode=m;activeModel=MODE_MODEL[m];
+    mode=m;
     $('mode-free').classList.toggle('active',m==='free');
     $('mode-paid').classList.toggle('active',m==='paid');
     $('mode-image').classList.toggle('active',m==='image');
@@ -596,15 +712,65 @@ footer a:hover{color:var(--ink)}
     $('input').placeholder = m==='image'
       ? 'Опишите картинку: «Инфографика о строительстве дома из газобетона, плоская векторная иллюстрация, синие и оранжевые акценты…»'
       : 'Спросите что угодно…';
+    populateModelSelect();
+    $('quota-bar').style.display = (m==='free') ? 'block' : 'none';
+    renderQuotaBar();
   }
   $('mode-free').onclick=()=>setMode('free');
   $('mode-paid').onclick=()=>setMode('paid');
   $('mode-image').onclick=()=>setMode('image');
+  document.addEventListener('change',e=>{
+    if(e.target && e.target.id==='model-select'){
+      const opts=mode==='paid'?MODELS.paid:MODELS.free;
+      const found=opts.find(m=>m.id===e.target.value);
+      if(found){activeModel=found;localStorage.setItem('askhub_model_'+mode,found.id);updateModelPriceTag()}
+    }
+  });
+
+  // === история чатов (боковая панель) ===
+  function renderChatList(){
+    const el=$('chat-list');if(!el)return;
+    el.innerHTML='';
+    const list=chatList();
+    if(!list.length){el.innerHTML='<div class="chat-empty">Пока нет чатов<br>Нажмите «+ Новый»</div>';return}
+    list.forEach(c=>{
+      const b=document.createElement('button');
+      b.className='chat-item'+(c.id===activeChatId?' active':'');
+      const t=document.createElement('span');t.className='chat-item-title';t.textContent=c.title||'Чат';
+      const d=document.createElement('button');d.className='chat-item-del';d.innerHTML='×';d.title='Удалить';
+      d.onclick=(ev)=>{ev.stopPropagation();if(!confirm('Удалить чат «'+(c.title||'Чат')+'»?'))return;delete chats[c.id];saveChats();if(activeChatId===c.id){const rest=chatList();activeChatId=rest.length?rest[0].id:null;if(!activeChatId){newChat()}else{localStorage.setItem(ACTIVE_CHAT_KEY,activeChatId)}}renderChatList();renderThread()};
+      b.appendChild(t);b.appendChild(d);
+      b.onclick=()=>{activeChatId=c.id;localStorage.setItem(ACTIVE_CHAT_KEY,c.id);renderChatList();renderThread()};
+      el.appendChild(b);
+    });
+  }
+  $('chat-new-btn').onclick=()=>{newChat();renderChatList();renderThread();$('input').focus()};
+
+  // === полоса free-квоты ===
+  function renderQuotaBar(){
+    const bar=$('quota-bar');if(mode!=='free'){bar.style.display='none';return}
+    bar.style.display='block';
+    if(freeLeftToday===null){
+      $('quota-tag').textContent='загрузка…';
+      $('quota-fill').style.width='100%';$('quota-fill').className='quota-bar-fill';
+      $('quota-cta').style.display='none';return;
+    }
+    const pct=Math.max(0,Math.min(100,(freeLeftToday/freeQuotaDaily)*100));
+    const tag=$('quota-tag'),fill=$('quota-fill'),cta=$('quota-cta');
+    tag.textContent=freeLeftToday+' / '+freeQuotaDaily;
+    fill.style.width=pct+'%';
+    tag.className='quota-tag';fill.className='quota-bar-fill';
+    if(freeLeftToday<=0){tag.classList.add('out');fill.classList.add('out');cta.style.display='block'}
+    else if(pct<25){tag.classList.add('low');fill.classList.add('low');cta.style.display='none'}
+    else{cta.style.display='none'}
+  }
+  document.addEventListener('click',e=>{if(e.target&&e.target.id==='quota-switch-paid'){e.preventDefault();setMode('paid')}});
 
   function renderThread(){
     const el=$('thread');el.innerHTML='';
-    if(!history.length){el.innerHTML='<p class="empty-state">Задайте вопрос — и получите ответ от AI-модели.</p>';return}
-    history.forEach(m=>{
+    const h=history();
+    if(!h.length){el.innerHTML='<p class="empty-state">Задайте вопрос — и получите ответ от AI-модели.</p>';return}
+    h.forEach(m=>{
       const d=document.createElement('div');
       d.className='msg '+m.role+(m.error?' error':'');
       if(m.role==='assistant'){
@@ -644,6 +810,9 @@ footer a:hover{color:var(--ink)}
       if(r.status===401){showAccessGate();return}
       const d=await readJsonSafe(r);
       if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
+      if(typeof d.freeLeftToday==='number'){freeLeftToday=d.freeLeftToday}
+      if(typeof d.freeQuotaDaily==='number'){freeQuotaDaily=d.freeQuotaDaily}
+      renderQuotaBar();
     }catch(e){/* не критично — просто не обновим баланс */}
   }
 
@@ -674,7 +843,7 @@ footer a:hover{color:var(--ink)}
       }
     }
 
-    history.push({role:'user',content:t});$('input').value='';
+    pushMsg({role:'user',content:t});$('input').value='';
     $('input').style.height='auto';
     renderThread();$('send').disabled=true;
     const typing=document.createElement('p');typing.className='typing';
@@ -691,32 +860,43 @@ footer a:hover{color:var(--ink)}
           body:JSON.stringify({user:userEmail,prompt:t,quality})
         });
         const d=await readJsonSafe(r);
-        if(r.status===401){showAccessGate();history.pop()}
-        else if(r.status===402){history.push({role:'assistant',content:(d.message||('Кредитов недостаточно, нужно '+(d.needed||50))),modelLabel:'Система',error:true})}
-        else if(r.status===503){history.push({role:'assistant',content:(d.message||'HD временно недоступен, попробуйте стандарт'),modelLabel:'Система',error:true})}
+        if(r.status===401){showAccessGate();popMsg()}
+        else if(r.status===402){pushMsg({role:'assistant',content:(d.message||('Кредитов недостаточно, нужно '+(d.needed||50))),modelLabel:'Система',error:true})}
+        else if(r.status===503){pushMsg({role:'assistant',content:(d.message||'HD временно недоступен, попробуйте стандарт'),modelLabel:'Система',error:true})}
         else if(!r.ok){throw new Error(d.error||('Ошибка HTTP '+r.status))}
         else{
           const src = d.imageB64 ? ('data:image/png;base64,'+d.imageB64) : d.imageUrl;
           if(!src) throw new Error('Провайдер не вернул изображение');
           const priceTag = d.usedFreeToday ? ' · бесплатная картинка дня' : (' · −'+(d.creditsCharged||0)+' кредитов');
           const modeTag = d.mode==='ultra' ? ' · Ultra' : (d.mode==='hd' ? ' · HD' : '');
-          history.push({role:'assistant',content:'',imageSrc:src,modelLabel:(d.provider||'image')+modeTag+priceTag});
+          pushMsg({role:'assistant',content:'',imageSrc:src,modelLabel:(d.provider||'image')+modeTag+priceTag});
           if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
         }
       } else {
         // Обычный текстовый чат
-        const apiMessages=history.filter(m=>!m.error && !m.imageSrc).map(m=>({role:m.role,content:m.content}));
+        const h=history();
+        const apiMessages=h.filter(m=>!m.error && !m.imageSrc).map(m=>({role:m.role,content:m.content}));
         const r=await fetch('/api/chat',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,model:activeModel.id,messages:apiMessages})});
         const d=await readJsonSafe(r);
-        if(r.status===401){showAccessGate();history.pop()}
-        else if(r.status===402){history.push({role:'assistant',content:'Кредиты закончились. Пополните баланс или переключитесь на бесплатный режим.',modelLabel:'Система',error:true})}
+        if(r.status===401){showAccessGate();popMsg()}
+        else if(r.status===402){
+          if(d.error==='free_quota_exhausted'){
+            freeLeftToday=0;freeQuotaDaily=d.freeQuotaDaily||30;renderQuotaBar();
+            pushMsg({role:'assistant',content:(d.message||'Бесплатные сообщения кончились'),modelLabel:'Система',error:true});
+          } else {
+            pushMsg({role:'assistant',content:'Кредиты закончились. Пополните баланс или переключитесь на бесплатный режим.',modelLabel:'Система',error:true});
+          }
+        }
         else if(!r.ok){throw new Error(d.error||('Ошибка HTTP '+r.status))}
         else{
-          history.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel:(d.routedModel||activeModel.label)+(d.isFree?' · бесплатно':'')});
+          pushMsg({role:'assistant',content:d.text||'(пустой ответ)',modelLabel:(d.routedModel||activeModel.label)+(d.isFree?' · бесплатно':'')});
           if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
+          if(typeof d.freeLeftToday==='number'){freeLeftToday=d.freeLeftToday}
+          if(typeof d.freeQuotaDaily==='number'){freeQuotaDaily=d.freeQuotaDaily}
+          renderQuotaBar();
         }
       }
-    }catch(e){history.push({role:'assistant',content:'Ошибка: '+(e&&e.message?e.message:'неизвестно'),modelLabel:'Система',error:true})}
+    }catch(e){pushMsg({role:'assistant',content:'Ошибка: '+(e&&e.message?e.message:'неизвестно'),modelLabel:'Система',error:true})}
     renderThread();$('send').disabled=false;$('input').focus();
   }
 
@@ -724,6 +904,7 @@ footer a:hover{color:var(--ink)}
     userEmail=email;localStorage.setItem('multi_user_email',email);
     $('gate').style.display='none';$('credits-box').style.display='flex';
     $('chat').style.display='block';$('start-cta').style.display='none';
+    loadChats();ensureActiveChat();renderChatList();renderThread();
     refreshCredits();
     setTimeout(()=>$('chat').scrollIntoView({behavior:'smooth',block:'start'}),100);
   }

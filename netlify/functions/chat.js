@@ -2,6 +2,7 @@ const { getCredits, saveCredits } = require('./_store');
 
 const CREDIT_VALUE_USD = 0.0001; // 1 кредит = $0.0001 реальной стоимости OpenRouter. Пользователь покупает кредит за $0.001 → маржа ×10
 const MIN_CREDITS_PER_MESSAGE = 1; // минимум для любой платной модели, даже если токенов было мало
+const FREE_MSG_PER_DAY = 30;       // сколько сообщений на free-моделях можно в сутки бесплатно
 
 // Кэш каталога моделей на время жизни функции (сбрасывается раз в 10 минут)
 let catalogCache = { free: null, pricing: null, ts: 0 };
@@ -122,8 +123,27 @@ exports.handler = async function (event) {
     }
     const isFree = free.has(model) || /:free$/i.test(model);
 
+    // Дневной счётчик free-сообщений — сбрасывается на новом UTC-дне
+    const todayKey = new Date().toISOString().slice(0, 10);
+    if (!record.free_day || record.free_day !== todayKey) {
+      record.free_day = todayKey;
+      record.free_used_today = 0;
+    }
+    const freeUsedToday = record.free_used_today || 0;
+    const freeLeftToday = Math.max(0, FREE_MSG_PER_DAY - freeUsedToday);
+
+    if (isFree && freeLeftToday <= 0) {
+      return json(402, {
+        error: 'free_quota_exhausted',
+        credits: record.credits,
+        freeLeftToday: 0,
+        freeQuotaDaily: FREE_MSG_PER_DAY,
+        message: `Бесплатных сообщений на сегодня не осталось (${FREE_MSG_PER_DAY}/сутки). Переключитесь на платную модель или подождите до полуночи UTC.`,
+      });
+    }
+
     if (!isFree && record.credits < MIN_CREDITS_PER_MESSAGE) {
-      return json(402, { error: 'insufficient_credits', credits: record.credits });
+      return json(402, { error: 'insufficient_credits', credits: record.credits, freeLeftToday, freeQuotaDaily: FREE_MSG_PER_DAY });
     }
 
     let res;
@@ -157,7 +177,15 @@ exports.handler = async function (event) {
     }
 
     let creditsCharged = 0;
-    if (!isFree) {
+    let newFreeUsed = freeUsedToday;
+    if (isFree) {
+      newFreeUsed = freeUsedToday + 1;
+      record = await saveCredits(user, {
+        credits: record.credits,
+        free_day: todayKey,
+        free_used_today: newFreeUsed,
+      });
+    } else {
       const routedId = data.model || model;
       const price = pricing.get(routedId) || pricing.get(model) || { prompt: 0, completion: 0 };
       const usage = data.usage || {};
@@ -171,7 +199,15 @@ exports.handler = async function (event) {
     const text = data.choices?.[0]?.message?.content || '';
     const routedModel = data.model || model;
 
-    return json(200, { text, credits: record.credits, isFree, routedModel, creditsCharged });
+    return json(200, {
+      text,
+      credits: record.credits,
+      isFree,
+      routedModel,
+      creditsCharged,
+      freeLeftToday: Math.max(0, FREE_MSG_PER_DAY - newFreeUsed),
+      freeQuotaDaily: FREE_MSG_PER_DAY,
+    });
   } catch (e) {
     console.error('chat.js unhandled error:', e);
     return json(500, { error: 'Внутренняя ошибка: ' + (e.message || 'unknown') });
