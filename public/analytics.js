@@ -68,7 +68,7 @@
         var t = texts[lg] || texts.ru;
         var wrap = document.createElement('div');
         wrap.id = 'askhub-cookie-banner';
-        wrap.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;background:#12121a;color:#e6e6f0;border:1px solid #2a2a38;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;font:13px/1.4 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:640px;margin:0 auto';
+        wrap.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(60px + env(safe-area-inset-top));z-index:99999;background:#12121a;color:#e6e6f0;border:1px solid #2a2a38;border-radius:10px;padding:8px 10px;display:flex;gap:8px;align-items:center;font:12.5px/1.35 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:640px;margin:0 auto';
         wrap.innerHTML = '<span style="flex:1">' + t.msg + '</span>' +
           '<button id="ck-ok" style="background:linear-gradient(135deg,#a78bfa,#22d3ee);border:0;color:#0a0a0f;padding:6px 12px;border-radius:6px;font-weight:700;cursor:pointer">' + t.ok + '</button>' +
           '<button id="ck-no" style="background:transparent;border:1px solid #2a2a38;color:#c4b5ff;padding:6px 10px;border-radius:6px;cursor:pointer">' + t.no + '</button>';

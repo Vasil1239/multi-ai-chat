@@ -1099,5 +1099,24 @@ if (savedEmail) {
   showGate(); $('gate-email').focus();
 }
 </script>
+<script>
+// Убираем Netlify HUD badge (Powered by Netlify) - он вставляется после загрузки страницы
+(function(){
+  function killHud(){
+    document.querySelectorAll('[id*="netlify"],[class*="netlify-hud"],[class*="powered"]').forEach(el=>{
+      const t=(el.textContent||'').toLowerCase();
+      if(t.includes('netlify')||t.includes('powered')) el.remove();
+    });
+    document.querySelectorAll('a').forEach(a=>{
+      if((a.href||'').includes('netlify.com')||(a.textContent||'').toLowerCase().includes('powered by netlify')){
+        let p=a; for(let i=0;i<4&&p;i++){ if(p.style && (p.style.position==='fixed'||getComputedStyle(p).position==='fixed')){ p.remove(); return;} p=p.parentElement; }
+        a.remove();
+      }
+    });
+  }
+  killHud();
+  new MutationObserver(killHud).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
 </body>
 </html>
