@@ -274,7 +274,17 @@ async function savePrev(snap) {
   } catch {}
 }
 
-exports.handler = async () => {
+exports.handler = async (event) => {
+  // Optional shared-secret guard for manual invocations.
+  // Scheduled runs go through seo-monitor-scheduled.js (which bypasses this check).
+  const secret = process.env.SEO_MONITOR_SECRET;
+  if (secret && event && !event.scheduled) {
+    const provided = (event.queryStringParameters && event.queryStringParameters.key)
+      || (event.headers && (event.headers['x-seo-key'] || event.headers['X-SEO-Key']));
+    if (provided !== secret) {
+      return { statusCode: 401, body: 'unauthorized' };
+    }
+  }
   const started = Date.now();
   // 1. Pages
   const pages = await Promise.all(KEY_PAGES.map(checkPage));
@@ -317,4 +327,6 @@ exports.handler = async () => {
   };
 };
 
-exports.config = { schedule: '0 6 * * *' }; // 06:00 UTC = 08:00 Belgrade
+// Manual endpoint (no schedule). The scheduled runner lives in seo-monitor-scheduled.js
+// and simply invokes the same logic (re-exported via module.exports.run below).
+module.exports.run = exports.handler;

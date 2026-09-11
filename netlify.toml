@@ -7,8 +7,11 @@
 [functions.image]
   timeout = 26
 
-# SEO мониторинг — ежедневная проверка, до 26 секунд.
+# SEO мониторинг — ежедневная проверка (расписание) и ручной вызов.
 [functions."seo-monitor"]
+  timeout = 26
+
+[functions."seo-monitor-scheduled"]
   timeout = 26
   schedule = "0 6 * * *"  # 06:00 UTC = 08:00 Belgrade
 
