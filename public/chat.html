@@ -29,7 +29,8 @@ a{color:var(--accent);text-decoration:none}
   .sidebar.open{transform:translateX(0)}
   .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:19}
   .backdrop.show{display:block}
-  .mobile-topbar{display:flex !important;position:sticky;top:0;z-index:6;background:var(--panel)}
+  .mobile-topbar{display:flex !important;position:sticky;top:0;z-index:6;background:var(--panel);padding-top:calc(10px + env(safe-area-inset-top)) !important}
+  .sidebar-head{padding-top:calc(14px + env(safe-area-inset-top)) !important}
   .chat-head{padding:10px 12px !important;gap:8px !important;flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .chat-head::-webkit-scrollbar{display:none}
   .chat-head > *{flex-shrink:0}

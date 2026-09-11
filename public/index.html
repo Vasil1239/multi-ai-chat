@@ -363,7 +363,8 @@ footer a:hover{color:var(--ink)}
 .quota-cta a{color:var(--accent);cursor:pointer;text-decoration:underline;font-weight:600}
 /* ============ MOBILE OVERRIDES ============ */
 @media(max-width:640px){
-  .hero{padding:32px 16px 24px !important}
+  body{padding-top:env(safe-area-inset-top)}
+  .hero{padding:calc(56px + env(safe-area-inset-top)) 16px 24px !important}
   .hero-in{gap:28px !important}
   .hero h1{font-size:clamp(30px,8vw,42px) !important;margin:0 0 14px !important}
   .hero .lead{font-size:15.5px !important;line-height:1.5 !important;margin:0 0 20px !important}
