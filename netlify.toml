@@ -2,6 +2,11 @@
   functions = "netlify/functions"
   publish = "public"
 
+# По умолчанию у sync-функций Netlify 10 сек. Для image.js это мало (Ultra ~25 сек).
+# Pro/Business план поддерживает до 26 сек через явное указание.
+[functions.image]
+  timeout = 26
+
 [[redirects]]
   from = "/api/chat"
   to = "/.netlify/functions/chat"
