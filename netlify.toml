@@ -7,6 +7,11 @@
 [functions.image]
   timeout = 26
 
+[functions.video]
+  timeout = 26
+  # ffmpeg binary is bundled by netlify with the function
+  included_files = ["node_modules/ffmpeg-static/ffmpeg"]
+
 # SEO мониторинг — ежедневная проверка (расписание) и ручной вызов.
 [functions."seo-monitor"]
   timeout = 26
@@ -23,6 +28,11 @@
 [[redirects]]
   from = "/api/image"
   to = "/.netlify/functions/image"
+  status = 200
+
+[[redirects]]
+  from = "/api/video"
+  to = "/.netlify/functions/video"
   status = 200
 
 [[redirects]]

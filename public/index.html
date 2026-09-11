@@ -726,6 +726,7 @@ document.addEventListener('DOMContentLoaded', function(){
           <button class="mode-btn active" data-mode="free" id="mode-free">🆓 Бесплатный</button>
           <button class="mode-btn" data-mode="paid" id="mode-paid">⚡ Платные модели</button>
           <button class="mode-btn" data-mode="image" id="mode-image">🎨 Картинка</button>
+          <button class="mode-btn" data-mode="video" id="mode-video">🎬 Видео</button>
         </div>
         <p class="mode-hint" id="mode-hint">Бесплатный режим — до 30 сообщений в сутки.</p>
 
@@ -748,6 +749,17 @@ document.addEventListener('DOMContentLoaded', function(){
           <label style="margin-right:14px;cursor:pointer;"><input type="radio" name="imgq" value="standard" checked> Стандарт · Gemini 2.5 · 100 кред</label>
           <label style="margin-right:14px;cursor:pointer;"><input type="radio" name="imgq" value="hd"> HD · Nano Banana 2 · 150 кред</label>
           <label style="cursor:pointer;"><input type="radio" name="imgq" value="ultra"> Ultra · Nano Banana Pro · инфографика · 500 кред</label>
+        </div>
+
+        <div id="video-toggle" style="display:none;margin:8px 0;font-size:14px;line-height:1.7;">
+          <div style="margin-bottom:8px;">
+            <label style="margin-right:14px;cursor:pointer;"><input type="radio" name="vidq" value="basic" checked> Слайдшоу · 2–10 фото · 200 кред</label>
+            <label style="cursor:pointer;"><input type="radio" name="vidq" value="ai"> AI оживление · Kling/Runway · 5 сек · 800 кред</label>
+          </div>
+          <div>
+            <input type="file" id="video-photos" accept="image/*" multiple style="font-size:13px;">
+            <span id="video-photos-info" style="color:var(--ink-mute);font-size:12px;margin-left:8px;">Слайдшоу: 2–10 фото. AI: 1 фото + описание в поле чата.</span>
+          </div>
         </div>
 
         <div class="thread" id="thread">
@@ -815,7 +827,8 @@ document.addEventListener('DOMContentLoaded', function(){
   const MODE_HINTS={
     free:'Бесплатные модели — до 30 сообщений в сутки. Когда лимит кончается — переключитесь на платные модели.',
     paid:'Платные модели: выбирайте конкретную или включите Авто. Списывается только за фактически использованные токены.',
-    image:'Генерация картинок. 3 стандартных в сутки — бесплатно (в trial), HD/Ultra — по кредитам.'
+    image:'Генерация картинок. 3 стандартных в сутки — бесплатно (в trial), HD/Ultra — по кредитам.',
+    video:'Видео из фото. Слайдшоу — 200 кредитов, AI оживление через Kling/Runway — 800 кредитов за 5 сек.'
   };
 
   // Эвристика: похоже ли сообщение на просьбу нарисовать/сгенерировать картинку
@@ -851,7 +864,7 @@ document.addEventListener('DOMContentLoaded', function(){
   function populateModelSelect(){
     const sel=$('model-select');if(!sel)return;
     sel.innerHTML='';
-    if(mode==='image'){sel.parentElement.style.display='none';return}
+    if(mode==='image'||mode==='video'){sel.parentElement.style.display='none';return}
     sel.parentElement.style.display='flex';
     const opts=mode==='paid'?MODELS.paid:MODELS.free;
     opts.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.vendor+' — '+m.label;sel.appendChild(o)});
@@ -872,11 +885,15 @@ document.addEventListener('DOMContentLoaded', function(){
     $('mode-free').classList.toggle('active',m==='free');
     $('mode-paid').classList.toggle('active',m==='paid');
     $('mode-image').classList.toggle('active',m==='image');
+    $('mode-video').classList.toggle('active',m==='video');
     $('image-quality-toggle').style.display = (m==='image') ? 'block' : 'none';
+    $('video-toggle').style.display = (m==='video') ? 'block' : 'none';
     $('mode-hint').textContent=MODE_HINTS[m];
     $('input').placeholder = m==='image'
       ? 'Опишите картинку: «Инфографика о строительстве дома из газобетона, плоская векторная иллюстрация, синие и оранжевые акценты…»'
-      : 'Спросите что угодно…';
+      : m==='video'
+        ? 'Описание движения (для AI): «Камера плавно наезжает, ветер шевелит листья…». Для слайдшоу поле можно оставить пустым.'
+        : 'Спросите что угодно…';
     populateModelSelect();
     $('quota-bar').style.display = (m==='free') ? 'block' : 'none';
     renderQuotaBar();
@@ -884,6 +901,7 @@ document.addEventListener('DOMContentLoaded', function(){
   $('mode-free').onclick=()=>setMode('free');
   $('mode-paid').onclick=()=>setMode('paid');
   $('mode-image').onclick=()=>setMode('image');
+  $('mode-video').onclick=()=>setMode('video');
   document.addEventListener('change',e=>{
     if(e.target && e.target.id==='model-select'){
       const opts=mode==='paid'?MODELS.paid:MODELS.free;
@@ -945,6 +963,10 @@ document.addEventListener('DOMContentLoaded', function(){
           if(m.content) inner += `<div style="margin-top:8px">${esc(m.content)}</div>`;
           const dl = m.imageSrc.startsWith('data:') ? m.imageSrc : m.imageSrc;
           inner += `<div style="margin-top:8px"><a href="${dl}" download="askhub-image.png" style="color:var(--accent);font-size:13px">Скачать изображение</a></div>`;
+        } else if(m.videoSrc){
+          inner += `<video src="${m.videoSrc}" controls playsinline style="max-width:100%;border-radius:14px;margin-top:6px;display:block;background:#000"></video>`;
+          if(m.content) inner += `<div style="margin-top:8px">${esc(m.content)}</div>`;
+          inner += `<div style="margin-top:8px"><a href="${m.videoSrc}" download="askhub-video.mp4" style="color:var(--accent);font-size:13px">Скачать видео</a></div>`;
         } else {
           inner += esc(m.content);
         }
@@ -1042,11 +1064,35 @@ document.addEventListener('DOMContentLoaded', function(){
     $('input').style.height='auto';
     renderThread();$('send').disabled=true;
     const typing=document.createElement('p');typing.className='typing';
-    typing.textContent = mode==='image' ? 'Генерирую изображение (10–40 сек)…' : 'Модель отвечает…';
+    typing.textContent = mode==='image' ? 'Генерирую изображение (10–40 сек)…' : mode==='video' ? 'Собираю видео (15–25 сек)…' : 'Модель отвечает…';
     $('thread').appendChild(typing);
 
     try{
-      if(mode==='image'){
+      if(mode==='video'){
+        // Генерация видео
+        const vTier = (document.querySelector('input[name="vidq"]:checked')||{}).value || 'basic';
+        const fileInput = $('video-photos');
+        const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
+        if(vTier==='basic' && files.length < 2){throw new Error('Для слайдшоу нужно минимум 2 фото (выберите файлы выше)')}
+        if(vTier==='ai' && files.length < 1){throw new Error('Для AI оживления нужно одно фото (выберите файл выше)')}
+        // читаем файлы в base64
+        const readAsB64 = (f) => new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(f)});
+        const photos = await Promise.all(files.slice(0,10).map(readAsB64));
+        const body = vTier==='ai' ? {user:userEmail,tier:'ai',image:photos[0],prompt:t} : {user:userEmail,tier:'basic',photos};
+        const r=await fetch('/api/video',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify(body)});
+        const d=await readJsonSafe(r);
+        if(r.status===401){showAccessGate();popMsg()}
+        else if(r.status===402){pushMsg({role:'assistant',content:(d.message||('Кредитов недостаточно, нужно '+(d.needed||200))),modelLabel:'Система',error:true})}
+        else if(!r.ok){throw new Error(d.message||d.error||('Ошибка HTTP '+r.status))}
+        else{
+          const src = d.videoUrl ? d.videoUrl : (d.videoB64 ? ('data:video/mp4;base64,'+d.videoB64) : null);
+          if(!src) throw new Error('Провайдер не вернул видео');
+          const tierTag = d.tier==='ai' ? ' · AI' : ' · слайдшоу';
+          pushMsg({role:'assistant',content:'',videoSrc:src,modelLabel:(d.provider||'video')+tierTag+' · −'+(d.creditsCharged||0)+' кредитов'});
+          if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
+          if(fileInput) fileInput.value='';
+        }
+      } else if(mode==='image'){
         // Генерация картинки
         const quality = (document.querySelector('input[name="imgq"]:checked')||{}).value || 'standard';
         const r=await fetch('/api/image',{
@@ -1070,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', function(){
       } else {
         // Обычный текстовый чат
         const h=history();
-        const apiMessages=h.filter(m=>!m.error && !m.imageSrc).map(m=>({role:m.role,content:m.content}));
+        const apiMessages=h.filter(m=>!m.error && !m.imageSrc && !m.videoSrc).map(m=>({role:m.role,content:m.content}));
         const r=await fetch('/api/chat',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,model:activeModel.id,messages:apiMessages})});
         const d=await readJsonSafe(r);
         if(r.status===401){showAccessGate();popMsg()}

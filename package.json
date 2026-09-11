@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@netlify/blobs": "^8.1.0",
+    "ffmpeg-static": "^5.2.0",
     "stripe": "^17.3.0"
   }
 }
