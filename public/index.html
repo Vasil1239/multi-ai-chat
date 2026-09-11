@@ -361,6 +361,74 @@ footer a:hover{color:var(--ink)}
 .quota-bar-fill.out{background:#ff7373}
 .quota-cta{margin-top:8px;font-size:12.5px;color:var(--ink-mute)}
 .quota-cta a{color:var(--accent);cursor:pointer;text-decoration:underline;font-weight:600}
+/* ============ MOBILE OVERRIDES ============ */
+@media(max-width:640px){
+  .hero{padding:32px 16px 24px !important}
+  .hero-in{gap:28px !important}
+  .hero h1{font-size:clamp(30px,8vw,42px) !important;margin:0 0 14px !important}
+  .hero .lead{font-size:15.5px !important;line-height:1.5 !important;margin:0 0 20px !important}
+  .hero-badge{font-size:12px !important;padding:5px 10px !important;margin-bottom:14px}
+  .hero-actions{gap:8px !important;margin-bottom:18px !important;flex-direction:column;align-items:stretch}
+  .btn-lg{padding:14px 20px !important;font-size:15px !important;justify-content:center;width:100%}
+  .trust{gap:14px !important;font-size:12px !important}
+  .hero-visual img{border-radius:16px}
+
+  .section{padding:44px 16px !important}
+  .section-title{margin-bottom:28px !important}
+  .section-title h2{font-size:26px !important}
+  .section-title p{font-size:14.5px !important}
+
+  .grid-3{gap:12px !important}
+  .install-grid{gap:12px !important}
+
+  .gate,.access-gate{padding:22px 16px !important;border-radius:14px}
+  .gate h3,.access-gate h3{font-size:19px}
+  .gate p,.access-gate p{font-size:13.5px}
+  .gate-row{flex-direction:column;gap:8px}
+  .gate-row input{width:100%;min-width:0;padding:12px 14px;font-size:16px}
+  .gate-row button{width:100%;padding:13px}
+
+  .mode-toggle{padding:4px;gap:4px;border-radius:12px}
+  .mode-btn{padding:10px 8px !important;font-size:13px !important;gap:5px !important}
+  .mode-hint{font-size:11.5px !important;margin:-6px 0 12px !important}
+
+  .thread{padding:12px !important;max-height:52vh !important;border-radius:14px}
+  .msg{padding:11px 13px !important;font-size:14.5px !important;border-radius:12px}
+  .msg.user{margin-left:12% !important}
+  .msg.assistant{margin-right:6% !important}
+
+  .composer{gap:6px !important;flex-direction:row}
+  .composer textarea{padding:11px 12px !important;font-size:16px !important;min-height:46px !important;border-radius:12px}
+  .composer button{padding:0 16px !important;height:46px !important;font-size:14px !important;border-radius:12px;min-width:80px}
+
+  .topup-panel{gap:8px !important;margin:12px 0 !important}
+  .pack-btn{padding:12px !important;border-radius:12px}
+  .pack-title{font-size:14px !important}
+  .pack-price{font-size:12.5px !important}
+
+  .chat-layout{gap:10px !important}
+  .chat-sidebar{padding:8px !important;max-height:140px !important;border-radius:12px}
+  .chat-sidebar-head h4{font-size:11.5px}
+  .chat-new-btn{padding:4px 8px;font-size:11px}
+  .chat-item{padding:7px 8px !important;font-size:12.5px !important}
+
+  .contact{padding:36px 16px 28px !important}
+  .contact-card{padding:24px 18px !important;border-radius:14px}
+  .contact h2{font-size:22px !important}
+  .contact p{font-size:14px !important}
+  .tg-btn{padding:12px 20px !important;font-size:14.5px !important;width:100%;justify-content:center}
+
+  /* Модалка топ-апа из openTopupModal() — на телефоне полноэкранно */
+  #topup-modal-live > div{max-width:100% !important;margin:0 !important;border-radius:16px 16px 0 0 !important;padding:20px 16px calc(20px + env(safe-area-inset-bottom)) !important;position:absolute !important;bottom:0 !important;left:0 !important;right:0 !important;max-height:85dvh !important;overflow-y:auto}
+}
+
+/* Мелкие телефоны */
+@media(max-width:380px){
+  .hero h1{font-size:28px !important}
+  .hero .lead{font-size:14.5px !important}
+  .section-title h2{font-size:22px !important}
+  .btn-lg{padding:12px 16px !important;font-size:14px !important}
+}
 </style>
 <script>
 // ============ i18n (RU / EN / SR) ============

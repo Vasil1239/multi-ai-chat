@@ -110,7 +110,14 @@ a{color:var(--accent);text-decoration:none}
 .msg.system .msg-avatar{background:var(--panel-2);color:var(--warn)}
 .msg-body{flex:1;min-width:0}
 .msg-meta{color:var(--ink-mute);font-size:11px;margin-bottom:4px;font-family:'Space Grotesk',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-.msg-content{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
+.msg-content{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;word-wrap:break-word;overflow-wrap:break-word}
+.msg-content a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;word-break:break-all}
+.msg-content a:hover{color:var(--accent-2)}
+.msg-content code.inline{background:var(--panel-3);padding:2px 6px;border-radius:5px;font-size:.9em;font-family:'JetBrains Mono',ui-monospace,monospace;color:#f5d99a}
+.msg-content pre.code{background:#0f0f16;border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0;font-size:13px;line-height:1.5}
+.msg-content pre.code code{color:#e2e8f0;font-family:'JetBrains Mono',ui-monospace,monospace;background:none;padding:0}
+.msg-content strong{color:var(--ink);font-weight:700}
+.msg-content em{color:var(--ink-soft);font-style:italic}
 .msg.user .msg-content{background:transparent;border-color:transparent;padding:6px 0}
 .msg.error .msg-content{border-color:rgba(255,115,115,.35);color:#fecaca}
 .msg-content img{max-width:100%;max-height:520px;object-fit:contain;border-radius:10px;display:block;background:#000;cursor:zoom-in}
@@ -604,6 +611,28 @@ function renderThread() {
   requestAnimationFrame(() => { $('thread-wrap').scrollTop = $('thread-wrap').scrollHeight; });
   updateHead();
 }
+// Безопасный рендер текста → HTML: сначала эскейп, потом код-блоки, потом ссылки, потом переносы.
+function renderRichText(raw){
+  let s = esc(raw || '');
+  // тройной ```code``` → <pre><code>
+  s = s.replace(/```([\s\S]*?)```/g, (_,c)=>`<pre class="code"><code>${c.replace(/^\n+|\n+$/g,'')}</code></pre>`);
+  // одинарный `code` → <code>
+  s = s.replace(/`([^`\n]+)`/g, (_,c)=>`<code class="inline">${c}</code>`);
+  // markdown-ссылки [text](url)
+  s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_,t,u)=>`<a href="${u}" target="_blank" rel="noopener nofollow">${t}</a>`);
+  // голые URL → кликабельные (только те, что ещё не в href)
+  s = s.replace(/(^|[^"'>=])((https?:\/\/)[^\s<)]+)/g,
+    (_,pre,u)=>`${pre}<a href="${u}" target="_blank" rel="noopener nofollow">${u}</a>`);
+  // жирный **text**
+  s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+  // курсив *text*
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  // переносы строк
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+
 function renderMsg(m) {
   const avatar = m.role === 'user' ? 'В'
     : m.role === 'system' ? '!'
@@ -612,7 +641,7 @@ function renderMsg(m) {
   let content = '';
   if (m.imageSrc) content = `<img src="${m.imageSrc}" alt="картинка">`;
   else if (m.videoSrc) content = `<video src="${m.videoSrc}" controls playsinline style="max-width:100%;border-radius:14px;background:#000"></video>`;
-  else content = esc(m.content || '');
+  else content = renderRichText(m.content || '');
   if (m.imageSrc) {
     content += `<div class="img-actions"><a href="${m.imageSrc}" download="askhub-image.png">↓ Скачать</a><a href="${m.imageSrc}" target="_blank" rel="noopener">⇱ Открыть</a></div>`;
   }
@@ -783,6 +812,18 @@ async function send() {
       }
     } else {
       const apiMsgs = chat.messages.filter(m => !m.error && !m.imageSrc && !m.videoSrc).map(m => ({role:m.role, content:m.content}));
+      // Базовый system-prompt: честно о возможностях + требование давать кликабельные markdown-ссылки
+      apiMsgs.unshift({ role:'system', content:
+        'Ты AskHub — AI-ассистент в чат-интерфейсе. Отвечай на языке пользователя (по умолчанию — русский). '+
+        'КРИТИЧНО: ты не можешь открывать сайты, кликать кнопки, заполнять формы, регистрировать пользователя, отправлять сообщения или выполнять любые действия в браузере. '+
+        'Когда пользователь просит «открой», «зарегистрируй», «зайди в аккаунт» — не ври что сделал, а выдай: '+
+        '(1) точную кликабельную ссылку на нужную страницу сайта, (2) короткую пошаговую инструкцию что нажать и что ввести. '+
+        'ВСЕ URL в ответе обязательно в формате markdown: [читаемое название](https://полный-url) — без исключений. '+
+        'Никогда не пиши «я открыл страницу», «я зарегистрировал вас» — это ложь. Скажи честно: «вот ссылка, кликните, дальше сделайте так-то». '+
+        'Если точный URL неизвестен — дай ссылку на главную сайта и скажи где в меню искать. '+
+        'Форматируй ответы: заголовки через **жирный**, код в `обратные кавычки`, списки через тире. '+
+        'Для сербских госуслуг: eUprava (euprava.gov.rs), Poreska (purs.gov.rs). Для русских: Gosuslugi (gosuslugi.ru), ФНС (nalog.gov.ru).'
+      });
       if (imageIntent) {
         apiMsgs.unshift({ role:'system', content:
           'Пользователь просит изображение или инфографику. Ты сам НЕ рисуешь — ты пишешь ПРОМПТ-БРИФ для image-модели (Nano Banana Pro, Ultra). '+
