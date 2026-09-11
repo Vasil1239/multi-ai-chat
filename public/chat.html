@@ -219,8 +219,9 @@ a{color:var(--accent);text-decoration:none}
         <div class="mode-tabs">
           <button class="active" data-mode="free" id="tab-free">Бесплатно</button>
           <button data-mode="paid" id="tab-paid">Платно</button>
-          <button data-mode="search" id="tab-search" title="Поиск в интернете + ответ модели с цитатами">🔎 Поиск</button>
           <button data-mode="image" id="tab-image">Картинка</button>
+          <!-- вкладка "🔎 Поиск" (собственный Tavily-оркестратор) скрыта до оплаты Tavily API. Когда ключ будет — вернуть одной строкой:
+          <button data-mode="search" id="tab-search">🔎 Поиск</button> -->
         </div>
         <select id="model-select" class="model-select-inline"></select>
       </div>
@@ -518,8 +519,8 @@ function setMode(m) {
 }
 $('tab-free').onclick   = () => setMode('free');
 $('tab-paid').onclick   = () => setMode('paid');
-$('tab-search').onclick = () => setMode('search');
 $('tab-image').onclick  = () => setMode('image');
+if ($('tab-search')) $('tab-search').onclick = () => setMode('search');
 $('model-select').onchange = (e) => {
   const opts = (state.mode === 'paid' || state.mode === 'search') ? MODELS.paid : MODELS.free;
   const f = opts.find(m => m.id === e.target.value);
