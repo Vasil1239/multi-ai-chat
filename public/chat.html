@@ -597,6 +597,10 @@ function renderMsg(m) {
   if (m.videoSrc) {
     content += `<div class="img-actions"><a href="${m.videoSrc}" download="askhub-video.mp4">↓ Скачать</a><a href="${m.videoSrc}" target="_blank" rel="noopener">⇱ Открыть</a></div>`;
   }
+  if (m.briefFor === 'image' && !m.imageSrc && !m.error) {
+    const idx = messagesInChat().indexOf(m);
+    content += `<div class="img-actions"><a href="#" onclick="generateFromBrief(${idx});return false" style="background:linear-gradient(135deg,#a78bfa,#22d3ee);color:#0a0a0f;font-weight:800;border-color:transparent">🎨 Сгенерировать в Ultra · 300 кр</a><a href="#" onclick="generateFromBrief(${idx},'hd');return false">HD · 150 кр</a><a href="#" onclick="generateFromBrief(${idx},'standard');return false">Стандарт · 65 кр</a></div>`;
+  }
   const meta = m.role !== 'user' ? `<div class="msg-meta">${esc(m.modelLabel || (m.role==='assistant' ? 'AI' : 'Система'))}</div>` : '';
   return `<div class="${cls}"><div class="msg-avatar">${esc(avatar)}</div><div class="msg-body">${meta}<div class="msg-content">${content}</div></div></div>`;
 }
@@ -664,14 +668,9 @@ async function readJsonSafe(r) {
 
 async function send() {
   const t = $('input').value.trim(); if (!t) return;
-  // Авто-подсказка: если пользователь просит картинку/инфографику в текстовом режиме — предложить переключиться
-  if ((state.mode==='free' || state.mode==='paid') && /\b(нарису|нарисов|сгенерируй\s+карт|сгенерируй\s+фото|сгенерируй\s+изобр|сделай\s+карт|сделай\s+фото|сделай\s+изобр|инфограф|картинк|изображени|логотип|постер|баннер|обложк|рисунок|ilustrac|draw\s+me|generate\s+image|make\s+an?\s+image|infographic)\b/i.test(t)) {
-    if (confirm('Похоже, вы просите изображение. Переключиться на режим «Картинка»?\n\nТекстовые модели (включая VIP Perplexity) картинки не рисуют — они только пишут текст/код. Картинки генерирует отдельный движок Gemini/Nano Banana в режиме «Картинка».')) {
-      setMode('image');
-      $('input').value = t; autoResize();
-      return;
-    }
-  }
+  // Детект: пользователь просит картинку/инфографику в текстовом режиме → включаем brief-режим
+  const IMAGE_INTENT = /\b(нарису|нарисов|сгенерируй\s+карт|сгенерируй\s+фото|сгенерируй\s+изобр|сделай\s+карт|сделай\s+фото|сделай\s+изобр|инфограф|картинк|изображени|логотип|постер|баннер|обложк|рисунок|ilustrac|draw\s+me|generate\s+image|make\s+an?\s+image|infographic)\b/i;
+  const imageIntent = (state.mode==='free' || state.mode==='paid') && IMAGE_INTENT.test(t);
   if (!currentChat()) { newChat(state.activeProjectId); renderChats(); }
   const chat = currentChat();
   if (chat.messages.length >= MAX_MSG_PER_THREAD) {
@@ -679,7 +678,7 @@ async function send() {
     return;
   }
 
-  chat.messages.push({ role: 'user', content: t });
+  chat.messages.push({ role: 'user', content: t, imageIntent: imageIntent||undefined });
   chat.updated_at = Date.now();
   if (!chat.title || chat.title === 'Новый чат') chat.title = t.slice(0, 40) || 'Чат';
   saveWS(); renderChats(); renderThread();
@@ -762,6 +761,16 @@ async function send() {
       }
     } else {
       const apiMsgs = chat.messages.filter(m => !m.error && !m.imageSrc && !m.videoSrc).map(m => ({role:m.role, content:m.content}));
+      if (imageIntent) {
+        apiMsgs.unshift({ role:'system', content:
+          'Пользователь просит изображение или инфографику. Ты сам НЕ рисуешь — ты пишешь ПРОМПТ-БРИФ для image-модели (Nano Banana Pro, Ultra). '+
+          'Верни один готовый промпт на английском в ~120 словах в одном абзаце. '+
+          'Опиши: главный объект/сцену, композицию (крупный/средний план, ракурс), стиль (flat vector illustration / photorealistic / 3D / infographic), '+
+          'цветовую палитру (2–3 hex-кода), освещение, фон, текстовые плашки с точным текстом (если инфографика — 3–6 иконок + подписи русскими короткими фразами), '+
+          'соотношение сторон (square 1:1 / 16:9 / 9:16), уровень детализации. '+
+          'Не добавляй пояснений «вот промпт» — только сам промпт. '+
+          'В самом конце добавь строку: ```BRIEF_READY```' });
+      }
       const r = await fetch('/api/chat', {
         method:'POST', headers: accessHeaders({'Content-Type':'application/json'}),
         body: JSON.stringify({ user: state.userEmail, model: state.activeModel.id, messages: apiMsgs })
@@ -779,7 +788,7 @@ async function send() {
       else if (!r.ok) throw new Error(d.error || ('HTTP '+r.status));
       else {
         // Не показываем внутренний id из OpenRouter (может содержать бренд провайдера) — всегда берём лейбл из каталога
-chat.messages.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel: state.activeModel.label + (d.isFree?' · бесплатно':'')});
+chat.messages.push({role:'assistant',content:d.text||'(пустой ответ)',modelLabel: state.activeModel.label + (d.isFree?' · бесплатно':''), briefFor: imageIntent ? 'image' : undefined});
         if (typeof d.credits === 'number')       { state.credits = d.credits; updateCreditsPill(); }
         if (typeof d.freeLeftToday === 'number')  state.freeLeftToday = d.freeLeftToday;
         if (typeof d.freeQuotaDaily === 'number') state.freeQuotaDaily = d.freeQuotaDaily;
@@ -792,6 +801,48 @@ chat.messages.push({role:'assistant',content:d.text||'(пустой ответ)'
   saveWS(); renderChats(); renderThread();
   $('send-btn').disabled = false; $('input').focus();
 }
+
+// ============ Brief → Image ============
+async function generateFromBrief(msgIdx, quality) {
+  quality = quality || 'ultra';
+  const chat = currentChat(); if (!chat) return;
+  const msgs = messagesInChat();
+  const m = msgs[msgIdx]; if (!m || !m.content) { alert('Пустой бриф'); return; }
+  // Очищаем от маркера BRIEF_READY
+  let prompt = String(m.content).replace(/```BRIEF_READY```/g,'').replace(/\bBRIEF_READY\b/g,'').trim();
+  if (prompt.length < 20) { alert('Слишком короткий бриф — попросите модель дописать детали'); return; }
+  // Пометим сообщение как «в работе», уберём кнопку
+  m.briefFor = undefined;
+  chat.messages.push({ role:'assistant', content:'⏳ Генерирую изображение по брифу ('+quality.toUpperCase()+')…', modelLabel:'Система' });
+  saveWS(); renderThread();
+  try {
+    const r = await fetch('/api/image', {
+      method:'POST', headers: accessHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ user: state.userEmail, prompt, quality })
+    });
+    const d = await readJsonSafe(r);
+    // Уберём "⏳" плейсхолдер
+    chat.messages.pop();
+    if (r.status === 401) { showGate(); }
+    else if (r.status === 402) chat.messages.push({role:'assistant',content:d.message||'Кредитов недостаточно',modelLabel:'Система',error:true});
+    else if (!r.ok) chat.messages.push({role:'assistant',content:'Ошибка: '+(d.error||('HTTP '+r.status)),modelLabel:'Система',error:true});
+    else {
+      const src = d.imageB64 ? ('data:image/png;base64,'+d.imageB64) : d.imageUrl;
+      if (!src) chat.messages.push({role:'assistant',content:'Провайдер не вернул изображение',modelLabel:'Система',error:true});
+      else {
+        const priceTag = d.usedFreeToday ? '· бесплатно' : ('· −'+(d.creditsCharged||0)+' кред');
+        const modeTag = d.mode === 'ultra' ? 'Ultra (Nano Banana Pro)' : (d.mode === 'hd' ? 'HD' : 'Standard');
+        chat.messages.push({ role:'assistant', content:'', imageSrc:src, modelLabel: modeTag+' '+priceTag });
+        if (typeof d.credits === 'number') { state.credits = d.credits; updateCreditsPill(); }
+      }
+    }
+  } catch(e) {
+    chat.messages.pop();
+    chat.messages.push({role:'assistant',content:'Ошибка сети: '+(e?.message||''),modelLabel:'Система',error:true});
+  }
+  chat.updated_at = Date.now(); saveWS(); renderThread();
+}
+window.generateFromBrief = generateFromBrief;
 
 // ============ Credits & free quota ============
 function updateCreditsPill() { $('credits-value').textContent = (state.credits === null) ? '—' : state.credits; }
