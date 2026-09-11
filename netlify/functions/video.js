@@ -21,11 +21,11 @@ const VIDEO_COST_TEXT  = 600;   // $0.20  → $0.60 (+200% net) — text-to-vide
 // Replicate model versions (updated 2026):
 //   Kling 1.6 Standard image-to-video (5s, 720p): kwaivgi/kling-v1.6-standard
 //   Runway Gen-3 Alpha Turbo: runwayml/gen3a-turbo (fallback image-to-video)
-//   Text-to-video: Wan 2.2 (wavespeedai) fallback → Kling text-to-video
+//   Text-to-video: Wan 2.2 (wan-video) primary → Bytedance Seedance-Lite fallback
 const REPLICATE_KLING = 'kwaivgi/kling-v1.6-standard';
 const REPLICATE_RUNWAY = 'runwayml/gen3a-turbo';
-const REPLICATE_KLING_T2V = 'kwaivgi/kling-v2.1';   // text-to-video (5s, 720p)
-const REPLICATE_WAN_T2V = 'wavespeedai/wan-2.2-t2v-fast'; // fallback text-to-video
+const REPLICATE_WAN_T2V = 'wan-video/wan-2.2-t2v-fast';        // primary text-to-video (5s)
+const REPLICATE_SEEDANCE_T2V = 'bytedance/seedance-1-lite';    // fallback text-to-video
 
 function json(status, body) {
   return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
@@ -157,7 +157,8 @@ async function generateTextVideo(prompt) {
   if (!prompt || !prompt.trim()) throw new Error('empty_prompt');
 
   const attempts = [
-    { name: 'kling-t2v', model: REPLICATE_KLING_T2V, input: { prompt: prompt.slice(0, 500), duration: 5, aspect_ratio: '16:9' } },
+    { name: 'wan-t2v', model: REPLICATE_WAN_T2V, input: { prompt: prompt.slice(0, 500) } },
+    { name: 'seedance-t2v', model: REPLICATE_SEEDANCE_T2V, input: { prompt: prompt.slice(0, 500), duration: 5 } },
     { name: 'wan-t2v', model: REPLICATE_WAN_T2V, input: { prompt: prompt.slice(0, 500), num_frames: 81, aspect_ratio: '16:9' } },
   ];
 
