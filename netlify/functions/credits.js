@@ -1,5 +1,5 @@
-// Возврат баланса кредитов и остатка бесплатной квоты пользователя (для UI).
-const { getCredits } = require('./_store');
+// Возврат баланса и статистики рефералов пользователя (для UI).
+const { getCredits, getReferralStats } = require('./_store');
 
 const FREE_MSG_PER_DAY = 30;
 
@@ -16,15 +16,27 @@ const json = (s, p) => ({ statusCode: s, headers: JSON_HEADERS, body: JSON.strin
 exports.handler = async function (event) {
   try {
     if (!checkAccessCode(event)) return json(401, { error: 'invalid_access_code' });
-    const user = (event.queryStringParameters || {}).user;
+    const q = event.queryStringParameters || {};
+    const user = q.user;
     if (!user) return json(400, { error: 'user required' });
-    const rec = await getCredits(user);
+
+    // ref-код передаётся при первом обращении, если пользователь пришёл по ссылке /?r=XXXX
+    const refCode = (q.ref || '').toString().toLowerCase().trim() || null;
+
+    const rec = await getCredits(user, refCode ? { refCode } : {});
     const today = new Date().toISOString().slice(0,10);
     const usedToday = (rec.free_day === today) ? (rec.free_used_today || 0) : 0;
+
+    let referralStats = { invitedCount: 0, bonusEarned: 0 };
+    try { referralStats = await getReferralStats(user); } catch (_) {}
+
     return json(200, {
       credits: rec.credits,
       freeQuotaDaily: FREE_MSG_PER_DAY,
-      freeLeftToday: Math.max(0, FREE_MSG_PER_DAY - usedToday)
+      freeLeftToday: Math.max(0, FREE_MSG_PER_DAY - usedToday),
+      refCode: rec.ref_code || null,
+      referredBy: rec.referred_by || null,
+      referral: referralStats,
     });
   } catch (e) {
     return json(500, { error: 'Внутренняя ошибка: ' + (e.message || 'unknown') });

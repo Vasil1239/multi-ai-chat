@@ -205,6 +205,12 @@ exports.handler = async function (event) {
       costUsdLogged =
         (usage.prompt_tokens || 0) * price.prompt +
         (usage.completion_tokens || 0) * price.completion;
+      // Perplexity Sonar — есть отдельная плата за поиск, добавляем фикс сверху:
+      // sonar $0.005/запрос, sonar-pro $0.005/запрос, sonar-reasoning $0.005/запрос.
+      const midStr = (routedIdEarly || model || '').toLowerCase();
+      if (midStr.startsWith('perplexity/sonar')) {
+        costUsdLogged += 0.005;
+      }
       creditsCharged = Math.max(MIN_CREDITS_PER_MESSAGE, Math.ceil(costUsdLogged / CREDIT_VALUE_USD));
       record = await saveCredits(user, { credits: record.credits - creditsCharged });
     }

@@ -1,33 +1,6 @@
 const Stripe = require('stripe');
-const { getStore } = require('@netlify/blobs');
+const { getCredits, saveCredits, payReferralBonusIfEligible } = require('./_store');
 const { logEvent } = require('./_analytics');
-
-// In-memory fallback store: используется если Netlify Blobs недоступен
-const _memStore = new Map();
-function memStore() {
-  return {
-    async get(key, opts) {
-      const v = _memStore.get(key);
-      if (v == null) return null;
-      return (opts && opts.type === 'json') ? v : JSON.stringify(v);
-    },
-    async setJSON(key, value) { _memStore.set(key, value); },
-    async set(key, value) { _memStore.set(key, value); },
-    async delete(key) { _memStore.delete(key); },
-    async list() { return { blobs: [...(_memStore.keys())].map(k => ({ key: k })) }; }
-  };
-}
-function openStore(name) {
-  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-  const token  = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
-  try {
-    if (siteID && token) return getStore({ name, siteID, token, consistency: 'strong' });
-    return getStore(name);
-  } catch (e) {
-    console.warn('Blobs unavailable, using in-memory store:', e.message);
-    return memStore();
-  }
-}
 
 exports.handler = async function (event) {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -41,7 +14,6 @@ exports.handler = async function (event) {
 
   let stripeEvent;
   try {
-    // event.body должен быть "сырым" (не распарсенным) — Netlify Functions отдают его строкой
     stripeEvent = stripe.webhooks.constructEvent(event.body, sig, webhookSecret);
   } catch (e) {
     return { statusCode: 400, body: 'Webhook signature verification failed: ' + e.message };
@@ -53,22 +25,27 @@ exports.handler = async function (event) {
     const credits = parseInt((session.metadata && session.metadata.credits) || '0', 10);
 
     if (user && credits > 0) {
-      const store = openStore('credits');
-      let record = await store.get(user, { type: 'json' });
-      if (!record) record = { credits: 0 };
-      record.credits += credits;
-      await store.setJSON(user, record);
+      // Начисляем оплаченные кредиты в Supabase (единый источник правды)
+      const rec = await getCredits(user);
+      await saveCredits(user, { credits: (rec.credits || 0) + credits });
 
-      // Аналитика — выручка от Stripe (amount_total в центах)
+      // Реферальная выплата пригласившему — только после ПЕРВОЙ оплаты приглашённого
+      let referralPayout = null;
+      try { referralPayout = await payReferralBonusIfEligible(user); } catch (e) { console.warn('referral payout failed:', e.message); }
+
       const amount = (session.amount_total || 0) / 100;
       logEvent({
         user_email: user,
         kind: 'topup',
         model: session.metadata?.pack || null,
         credits_charged: credits,
-        cost_usd: amount * 0.029 + 0.30, // Stripe fee оценка
+        cost_usd: amount * 0.029 + 0.30,
         revenue_usd: amount,
-        meta: { session_id: session.id, currency: session.currency },
+        meta: {
+          session_id: session.id,
+          currency: session.currency,
+          referral_payout: referralPayout, // { inviterEmail, bonus } | null
+        },
       }).catch(() => {});
     }
   }

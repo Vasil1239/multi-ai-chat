@@ -528,6 +528,26 @@ footer a:hover{color:var(--ink)}
   </div>
 </section>
 
+<!-- REFERRAL: показывается только вошедшим пользователям -->
+<section id="referral-box" style="display:none;max-width:900px;margin:32px auto;padding:24px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(135deg,rgba(167,139,250,.08),rgba(34,211,238,.08))">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;justify-content:space-between">
+    <div style="flex:1;min-width:260px">
+      <div style="font-size:22px;font-weight:800;margin-bottom:4px">🎁 Пригласи друга</div>
+      <div style="color:var(--ink-soft);font-size:14px;line-height:1.6">
+        Друг получит <b style="color:#a78bfa">+100 кред</b> при регистрации по вашей ссылке.<br/>
+        Вы — <b style="color:#22d3ee">+200 кред</b> после его первой оплаты.
+      </div>
+    </div>
+    <div style="flex:1;min-width:260px;max-width:520px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="referral-link" type="text" readonly style="flex:1;min-width:0;padding:12px 14px;font-size:14px;background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:10px" />
+        <button id="referral-copy" class="pill primary" onclick="copyReferralLink()" style="white-space:nowrap">Копия</button>
+      </div>
+      <div id="referral-stats" style="margin-top:8px;font-size:13px;color:var(--ink-mute)"></div>
+    </div>
+  </div>
+</section>
+
 <!-- APP: gate + chat -->
 <section class="app-shell" id="app">
   <div class="access-gate" id="access-gate" style="display:none;">
@@ -643,6 +663,9 @@ footer a:hover{color:var(--ink)}
       {id:'anthropic/claude-3.5-sonnet',label:'Claude 3.5 Sonnet',vendor:'Anthropic',free:false,priceHint:'премиум'},
       {id:'google/gemini-2.5-pro',label:'Gemini 2.5 Pro',vendor:'Google',free:false,priceHint:'стандарт'},
       {id:'openai/gpt-5-mini',label:'GPT-5 mini',vendor:'OpenAI',free:false,priceHint:'эконом'},
+      {id:'perplexity/sonar-pro',label:'Sonar Pro 🌐 поиск',vendor:'Perplexity',free:false,priceHint:'поиск в интернете'},
+      {id:'perplexity/sonar-reasoning',label:'Sonar Reasoning 🌐',vendor:'Perplexity',free:false,priceHint:'поиск+анализ'},
+      {id:'perplexity/sonar',label:'Sonar 🌐 поиск',vendor:'Perplexity',free:false,priceHint:'поиск в интернете'},
       {id:'deepseek/deepseek-chat-v3.1',label:'DeepSeek V3.1',vendor:'DeepSeek',free:false,priceHint:'эконом'},
       {id:'meta-llama/llama-3.3-70b-instruct',label:'Llama 3.3 70B',vendor:'Meta',free:false,priceHint:'эконом'},
       {id:'openrouter/auto',label:'Авто (лучшая платная)',vendor:'OpenRouter',free:false,priceHint:'авто'}
@@ -807,15 +830,45 @@ footer a:hover{color:var(--ink)}
 
   async function refreshCredits(){
     try{
-      const r=await fetch('/api/credits?user='+encodeURIComponent(userEmail),{headers:accessHeaders()});
+      let refFromLink=null;
+      try{
+        const p=new URLSearchParams(location.search);
+        refFromLink=p.get('r')||localStorage.getItem('askhub_pending_ref')||null;
+        if(p.get('r'))localStorage.setItem('askhub_pending_ref',p.get('r'));
+      }catch(_){}
+      const q='/api/credits?user='+encodeURIComponent(userEmail)+(refFromLink?'&ref='+encodeURIComponent(refFromLink):'');
+      const r=await fetch(q,{headers:accessHeaders()});
       if(r.status===401){showAccessGate();return}
       const d=await readJsonSafe(r);
       if(typeof d.credits==='number'){credits=d.credits;$('credits-pill').textContent=credits+' кредитов'}
       if(typeof d.freeLeftToday==='number'){freeLeftToday=d.freeLeftToday}
       if(typeof d.freeQuotaDaily==='number'){freeQuotaDaily=d.freeQuotaDaily}
+      window.__refCode=d.refCode||window.__refCode||null;
+      window.__referralStats=d.referral||{invitedCount:0,bonusEarned:0};
+      if(d.referredBy){try{localStorage.removeItem('askhub_pending_ref')}catch(_){}}
       renderQuotaBar();
+      renderReferralBox();
     }catch(e){/* не критично — просто не обновим баланс */}
   }
+
+  function renderReferralBox(){
+    const box=$('referral-box');if(!box)return;
+    const code=window.__refCode;
+    const st=window.__referralStats||{invitedCount:0,bonusEarned:0};
+    if(!code){box.style.display='none';return}
+    box.style.display='block';
+    const url=location.origin+'/?r='+encodeURIComponent(code);
+    $('referral-link').value=url;
+    $('referral-stats').textContent='Приглашено: '+st.invitedCount+' · Заработано: '+st.bonusEarned+' кред';
+  }
+
+  function copyReferralLink(){
+    const el=$('referral-link');if(!el)return;
+    el.select();
+    try{navigator.clipboard.writeText(el.value)}catch(_){document.execCommand('copy')}
+    const b=$('referral-copy');if(b){const o=b.textContent;b.textContent='Скопировано ✓';setTimeout(()=>{b.textContent=o},1500)}
+  }
+  window.copyReferralLink=copyReferralLink;
 
   function renderTopup(){
     const el=$('topup-panel');el.innerHTML='';
