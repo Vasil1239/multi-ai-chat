@@ -61,6 +61,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/checkout-paddle"
+  to = "/.netlify/functions/checkout-paddle"
+  status = 200
+
+[[redirects]]
+  from = "/api/webhook-paddle"
+  to = "/.netlify/functions/webhook-paddle"
+  status = 200
+
+[[redirects]]
   from = "/api/admin-stats"
   to = "/.netlify/functions/admin-stats"
   status = 200
