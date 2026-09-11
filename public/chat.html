@@ -664,6 +664,14 @@ async function readJsonSafe(r) {
 
 async function send() {
   const t = $('input').value.trim(); if (!t) return;
+  // Авто-подсказка: если пользователь просит картинку/инфографику в текстовом режиме — предложить переключиться
+  if ((state.mode==='free' || state.mode==='paid') && /\b(нарису|нарисов|сгенерируй\s+карт|сгенерируй\s+фото|сгенерируй\s+изобр|сделай\s+карт|сделай\s+фото|сделай\s+изобр|инфограф|картинк|изображени|логотип|постер|баннер|обложк|рисунок|ilustrac|draw\s+me|generate\s+image|make\s+an?\s+image|infographic)\b/i.test(t)) {
+    if (confirm('Похоже, вы просите изображение. Переключиться на режим «Картинка»?\n\nТекстовые модели (включая VIP Perplexity) картинки не рисуют — они только пишут текст/код. Картинки генерирует отдельный движок Gemini/Nano Banana в режиме «Картинка».')) {
+      setMode('image');
+      $('input').value = t; autoResize();
+      return;
+    }
+  }
   if (!currentChat()) { newChat(state.activeProjectId); renderChats(); }
   const chat = currentChat();
   if (chat.messages.length >= MAX_MSG_PER_THREAD) {
