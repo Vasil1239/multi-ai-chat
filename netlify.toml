@@ -23,11 +23,6 @@
   status = 200
 
 [[redirects]]
-  from = "/api/diag-openai"
-  to = "/.netlify/functions/diag-openai"
-  status = 200
-
-[[redirects]]
   from = "/api/credits"
   to = "/.netlify/functions/credits"
   status = 200

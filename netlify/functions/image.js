@@ -1,16 +1,27 @@
 // Генерация изображений для AskHub.
-// Тарифная модель:
-//   quality:"standard" → OpenRouter google/gemini-2.5-flash-image, 50 кредитов
-//   quality:"hd"       → OpenAI    gpt-image-1,                    150 кредитов
-// Бесплатные картинки: 3/сутки только на стандарте и только в первые FREE_TRIAL_DAYS от регистрации.
-// HD никогда не бесплатен и никогда не идёт через Gemini.
+// Три тарифа (все через один ключ OpenRouter — карта OpenAI не нужна):
+//   quality:"standard" → google/gemini-2.5-flash-image       ~$0.04 → 50 кр (маржа 92%)
+//   quality:"hd"       → google/gemini-3.1-flash-image       ~$0.06 → 150 кр (маржа 60%)
+//   quality:"ultra"    → google/gemini-3-pro-image           ~$0.20 → 300 кр (маржа 33%)
+//
+// Fallback: если задан OPENAI_API_KEY и quality:"hd"/"ultra" с параметром provider:"openai",
+// пойдём в оригинальный OpenAI gpt-image-1 (нужен пополненный баланс OpenAI).
+//
+// Бесплатные картинки: 3/сутки только на standard и только в первые FREE_TRIAL_DAYS от регистрации.
+// HD и Ultra всегда платные.
 
 const { getCredits, saveCredits } = require('./_store');
 
 const FREE_TRIAL_DAYS = 7;
 const FREE_IMAGES_PER_DAY = 3;
-const IMAGE_COST_STANDARD = 50;   // Gemini, себестоимость ~$0.005 → маржа 90%
-const IMAGE_COST_HD       = 150;  // OpenAI, себестоимость ~$0.04  → маржа 73%
+
+const IMAGE_COST_STANDARD = 50;   // Gemini 2.5 Flash Image  ~$0.04 → маржа ~92%
+const IMAGE_COST_HD       = 150;  // Gemini 3.1 Flash Image  ~$0.06 → маржа ~60%
+const IMAGE_COST_ULTRA    = 300;  // Gemini 3 Pro Image      ~$0.20 → маржа ~33%
+
+const MODEL_STANDARD = 'google/gemini-2.5-flash-image';
+const MODEL_HD       = 'google/gemini-3.1-flash-image';
+const MODEL_ULTRA    = 'google/gemini-3-pro-image';
 
 function isInFreeTrialWindow(record) {
   if (!record || !record.created_at) return true;
@@ -30,7 +41,7 @@ function checkAccessCode(event) {
   return provided === required;
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 90000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -40,7 +51,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
   }
 }
 
-// -------- OpenAI gpt-image-1 --------
+// -------- OpenAI gpt-image-1 (опциональный fallback) --------
 async function generateWithOpenAI({ prompt, size }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -74,12 +85,12 @@ async function generateWithOpenAI({ prompt, size }) {
   throw new Error('OpenAI: пустой ответ');
 }
 
-// -------- OpenRouter (Gemini image) --------
+// -------- OpenRouter (все Gemini image модели) --------
 async function generateWithOpenRouter({ prompt, model }) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
 
-  const usedModel = model || 'google/gemini-2.5-flash-image';
+  const usedModel = model || MODEL_STANDARD;
 
   const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -94,7 +105,7 @@ async function generateWithOpenRouter({ prompt, model }) {
       modalities: ['image', 'text'],
       messages: [{ role: 'user', content: prompt }],
     }),
-  }, 60000);
+  }, 120000);
 
   const raw = await res.text();
   let data;
@@ -124,7 +135,22 @@ async function generateWithOpenRouter({ prompt, model }) {
       }
     }
   }
-  throw new Error('OpenRouter не вернул картинку (модель может не поддерживать генерацию изображений).');
+  throw new Error('OpenRouter не вернул картинку (модель может не поддерживать генерацию).');
+}
+
+function resolveTier({ quality, model }) {
+  // Явные алиасы
+  const q = (quality || '').toLowerCase();
+  const m = (model || '').toLowerCase();
+
+  if (q === 'ultra' || m.includes('gemini-3-pro') || m === 'nano-banana-pro') {
+    return { tier: 'ultra', cost: IMAGE_COST_ULTRA, model: MODEL_ULTRA, useOpenAI: false };
+  }
+  if (q === 'hd' || m.includes('gemini-3.1') || m === 'nano-banana-2') {
+    // hd + provider openai → пробуем OpenAI, иначе Gemini 3.1 Flash Image
+    return { tier: 'hd', cost: IMAGE_COST_HD, model: MODEL_HD, useOpenAI: m === 'openai' || m === 'gpt-image-1' };
+  }
+  return { tier: 'standard', cost: IMAGE_COST_STANDARD, model: MODEL_STANDARD, useOpenAI: false };
 }
 
 exports.handler = async function (event) {
@@ -136,12 +162,14 @@ exports.handler = async function (event) {
     try { body = JSON.parse(event.body || '{}'); }
     catch (_) { return json(400, { error: 'Некорректный JSON в запросе' }); }
 
-    const { user, prompt, size, model, quality } = body;
+    const { user, prompt, size, model, quality, provider } = body;
     if (!user || !prompt || typeof prompt !== 'string' || prompt.trim().length < 3) {
       return json(400, { error: 'Нужны user и prompt (минимум 3 символа)' });
     }
 
-    const wantHD = quality === 'hd' || model === 'openai' || model === 'gpt-image-1';
+    const resolved = resolveTier({ quality, model: model || provider });
+    const { tier, cost, model: routedModel, useOpenAI } = resolved;
+    const isPaidTier = tier !== 'standard';
 
     let record = await getCredits(user);
 
@@ -152,41 +180,46 @@ exports.handler = async function (event) {
     }
 
     const inTrial = isInFreeTrialWindow(record);
-    const freeLeftToday = (inTrial && !wantHD)
+    const freeLeftToday = (inTrial && !isPaidTier)
       ? Math.max(0, FREE_IMAGES_PER_DAY - (record.img_used_today || 0))
       : 0;
     const useFree = freeLeftToday > 0;
-    const costCredits = wantHD ? IMAGE_COST_HD : IMAGE_COST_STANDARD;
 
-    if (!useFree && record.credits < costCredits) {
+    if (!useFree && record.credits < cost) {
       return json(402, {
         error: 'insufficient_credits',
         credits: record.credits,
-        needed: costCredits,
+        needed: cost,
+        tier,
         freeLeftToday: 0,
-        message: wantHD
-          ? `HD-картинка стоит ${costCredits} кредитов. Пополните баланс.`
-          : `Картинка стоит ${costCredits} кредитов.` + (inTrial ? ` В trial-режиме доступно ${FREE_IMAGES_PER_DAY} бесплатных/сутки.` : ' Пополните баланс.'),
+        message: isPaidTier
+          ? `${tier.toUpperCase()}-картинка стоит ${cost} кредитов. Пополните баланс.`
+          : `Картинка стоит ${cost} кредитов.` + (inTrial ? ` В trial-режиме доступно ${FREE_IMAGES_PER_DAY} бесплатных/сутки.` : ' Пополните баланс.'),
       });
     }
 
     let result = null;
     const attempts = [];
-    try {
-      result = wantHD
-        ? await generateWithOpenAI({ prompt, size })
-        : await generateWithOpenRouter({ prompt, model });
-    } catch (e) { attempts.push(e.message || String(e)); }
+
+    // Приоритетно: OpenAI только если явно попросили provider=openai для HD и ключ есть
+    if (useOpenAI && process.env.OPENAI_API_KEY) {
+      try { result = await generateWithOpenAI({ prompt, size }); }
+      catch (e) { attempts.push('openai:' + (e.message || String(e))); }
+    }
+
+    // Основной путь — OpenRouter (тот же ключ на все тарифы)
+    if (!result) {
+      try { result = await generateWithOpenRouter({ prompt, model: routedModel }); }
+      catch (e) { attempts.push('openrouter:' + (e.message || String(e))); }
+    }
 
     if (!result) {
       const detail = attempts.length ? attempts.join(' | ') : 'провайдер не настроен';
-      if (wantHD) {
-        return json(503, {
-          error: 'hd_unavailable',
-          message: 'HD недоступен: ' + detail + '. Добавьте OPENAI_API_KEY в Netlify.',
-        });
-      }
-      return json(500, { error: 'Не удалось сгенерировать изображение: ' + detail });
+      return json(502, {
+        error: 'image_failed',
+        tier,
+        message: `Не удалось сгенерировать (${tier}): ${detail}`,
+      });
     }
 
     let creditsCharged = 0;
@@ -195,8 +228,8 @@ exports.handler = async function (event) {
     if (useFree) {
       newImgUsed += 1;
     } else {
-      newCredits -= costCredits;
-      creditsCharged = costCredits;
+      newCredits -= cost;
+      creditsCharged = cost;
     }
     const saved = await saveCredits(user, {
       credits: newCredits,
@@ -209,8 +242,8 @@ exports.handler = async function (event) {
       credits: saved.credits,
       creditsCharged,
       usedFreeToday: useFree,
-      freeLeftToday: inTrial && !wantHD ? Math.max(0, FREE_IMAGES_PER_DAY - newImgUsed) : 0,
-      mode: wantHD ? 'hd' : 'standard',
+      freeLeftToday: inTrial && !isPaidTier ? Math.max(0, FREE_IMAGES_PER_DAY - newImgUsed) : 0,
+      mode: tier,
       trial: inTrial,
     });
   } catch (e) {
