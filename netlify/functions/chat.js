@@ -122,7 +122,16 @@ exports.handler = async function (event) {
     } catch (e) {
       console.warn('Не удалось загрузить каталог моделей:', e.message);
     }
-    const isFree = free.has(model) || /:free$/i.test(model);
+    // Whitelist «free for user» slugs — мы платим провайдеру копейки, пользователь — в рамках дневного лимита.
+    const FREE_WHITELIST = new Set([
+      'google/gemini-2.5-flash-lite',
+      'google/gemini-2.5-flash',
+      'deepseek/deepseek-chat-v3.1',
+      'meta-llama/llama-3.3-70b-instruct',
+      'qwen/qwen-2.5-72b-instruct',
+      'mistralai/mistral-small-3.2-24b-instruct',
+    ]);
+    const isFree = FREE_WHITELIST.has(model) || free.has(model) || /:free$/i.test(model);
 
     // Дневной счётчик free-сообщений — сбрасывается на новом UTC-дне
     const todayKey = new Date().toISOString().slice(0, 10);
