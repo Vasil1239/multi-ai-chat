@@ -1159,10 +1159,53 @@ document.addEventListener('DOMContentLoaded', function(){
   $('access-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('access-btn').click()});
   $('gate-btn').onclick=()=>{const v=$('email-input').value.trim();if(v)startApp(v)};
   $('email-input').addEventListener('keydown',e=>{if(e.key==='Enter')$('gate-btn').click()});
-  $('topup-toggle').onclick=()=>$('topup-panel').classList.toggle('open');
+  $('topup-toggle').onclick=()=>openTopupModal();
   $('send').onclick=send;
   $('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
   $('input').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'});
+
+  function openTopupModal(){
+    let m = document.getElementById('topup-modal-live');
+    if (m) { m.remove(); }
+    m = document.createElement('div');
+    m.id = 'topup-modal-live';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+    m.innerHTML = '<div style="max-width:520px;width:100%;background:#0f0f14;border:1px solid #262633;border-radius:16px;padding:22px;color:#f4f4f7;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.6)"><button id="topup-x" style="position:absolute;top:8px;right:12px;background:transparent;border:0;color:#999;font-size:24px;cursor:pointer;line-height:1">×</button><h3 style="margin:0 0 4px;font-family:Space Grotesk,sans-serif;font-size:20px">Пополнить кредиты</h3><p style="margin:0 0 16px;color:#a0a0a8;font-size:13px">1 000 кредитов ≈ $1. Оплата картой через LemonSqueezy.</p><div id="topup-modal-packs" style="display:flex;flex-direction:column;gap:10px"></div><p id="topup-modal-err" style="margin:12px 0 0;color:#ff8080;font-size:12px;min-height:14px"></p></div>';
+    document.body.appendChild(m);
+    m.querySelector('#topup-x').onclick = () => m.remove();
+    m.onclick = (e) => { if (e.target === m) m.remove(); };
+    const wrap = m.querySelector('#topup-modal-packs');
+    PACKS.forEach(function(p){
+      const b = document.createElement('button');
+      b.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:1px solid #262633;background:#181822;color:#f4f4f7;border-radius:12px;cursor:pointer;font-size:14px;text-align:left;transition:border-color .15s';
+      b.innerHTML = '<span><b>' + p.label + '</b>' + (p.note ? ' <span style="color:#a0a0a8;font-size:12px">· ' + p.note + '</span>' : '') + '</span><span style="font-weight:800;color:#a78bfa">' + p.price + ' →</span>';
+      b.onmouseover = function(){ b.style.borderColor = '#a78bfa'; };
+      b.onmouseout  = function(){ b.style.borderColor = '#262633'; };
+      b.onclick = function(){ buyPackFromMain(p.id, b); };
+      wrap.appendChild(b);
+    });
+  }
+  async function buyPackFromMain(packId, btn){
+    const err = document.getElementById('topup-modal-err'); if (err) err.textContent = '';
+    const orig = btn ? btn.innerHTML : ''; if (btn) { btn.disabled = true; btn.innerHTML = 'Открываю оплату…'; }
+    try {
+      const r = await fetch('/api/checkout', {
+        method:'POST',
+        headers: accessHeaders({'Content-Type':'application/json'}),
+        body: JSON.stringify({ user: userEmail, pack: packId })
+      });
+      if (r.status === 401) { showAccessGate(); return; }
+      const d = await readJsonSafe(r);
+      const url = d.checkout_url || d.url;
+      if (url) { window.location.href = url; return; }
+      if (err) err.textContent = 'Не удалось создать оплату: ' + (d.error || ('HTTP ' + r.status));
+    } catch(e) {
+      if (err) err.textContent = 'Сеть: ' + (e && e.message ? e.message : 'ошибка');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+    }
+  }
+  window.openTopupModal = openTopupModal;
 
   renderTopup();
   setMode('free');
