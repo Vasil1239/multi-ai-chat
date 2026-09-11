@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>AskHub · Чат</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="icon" href="/favicon.png">
 <style>
 :root{
@@ -23,12 +23,29 @@ a{color:var(--accent);text-decoration:none}
 .app{display:grid;grid-template-columns:280px 1fr;height:100vh}
 .backdrop{display:none}
 @media(max-width:820px){
-  .app{grid-template-columns:1fr}
-  .sidebar{position:fixed;left:0;top:0;height:100vh;width:280px;z-index:20;transform:translateX(-100%);transition:transform .25s}
+  .app{grid-template-columns:1fr;height:100dvh}
+  .main{height:100dvh}
+  .sidebar{position:fixed;left:0;top:0;height:100dvh;width:86vw;max-width:320px;z-index:20;transform:translateX(-100%);transition:transform .25s;box-shadow:0 0 40px rgba(0,0,0,.5)}
   .sidebar.open{transform:translateX(0)}
-  .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:19}
+  .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:19}
   .backdrop.show{display:block}
-  .mobile-topbar{display:flex !important}
+  .mobile-topbar{display:flex !important;position:sticky;top:0;z-index:6;background:var(--panel)}
+  .chat-head{padding:10px 12px !important;gap:8px !important;flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .chat-head::-webkit-scrollbar{display:none}
+  .chat-head > *{flex-shrink:0}
+  .composer-wrap{padding:10px 10px calc(14px + env(safe-area-inset-bottom)) !important}
+  .composer-inner{border-radius:12px;padding:6px 6px 6px 12px !important}
+  .composer textarea{font-size:16px !important;padding:8px 2px !important}
+  .composer-foot{margin:6px auto 0 !important;font-size:11px !important;gap:8px !important}
+  .sidebar-foot{padding:10px 12px calc(12px + env(safe-area-inset-bottom)) !important}
+  .msg-block{padding:10px 12px !important}
+  .msg-content{font-size:15px !important;line-height:1.55 !important}
+  .send-btn,.stop-btn{width:38px !important;height:38px !important}
+  .send-btn svg,.stop-btn svg{width:18px !important;height:18px !important}
+  #model-select,#mode-select,#tab-video-quality,#img-quality,#video-quality{font-size:13px !important;padding:6px 8px !important;max-width:180px}
+  .brand-mark{width:24px;height:24px}
+  .mode-tabs{gap:4px !important}
+  .mode-tab{padding:5px 10px !important;font-size:12.5px !important}
 }
 
 /* ============ SIDEBAR ============ */
@@ -399,16 +416,17 @@ const MODELS = {
     {id:'mistralai/mistral-small-3.2-24b-instruct',label:'Mistral Small 3.2 24B', vendor:'Mistral'}
   ],
   paid: [
+    {id:'askhub/auto',                             label:'🤖 Автоматический (сам выбирает)', vendor:'AskHub'},
     {id:'openai/gpt-5',                            label:'GPT-5', vendor:'OpenAI'},
-    {id:'anthropic/claude-3.5-sonnet',             label:'Claude 3.5 Sonnet', vendor:'Anthropic'},
-    {id:'google/gemini-2.5-pro',                   label:'Gemini 2.5 Pro', vendor:'Google'},
     {id:'openai/gpt-5-mini',                       label:'GPT-5 mini', vendor:'OpenAI'},
+    {id:'anthropic/claude-sonnet-4',               label:'Claude Sonnet 4', vendor:'Anthropic'},
+    {id:'google/gemini-2.5-pro',                   label:'Gemini 2.5 Pro', vendor:'Google'},
     {id:'perplexity/sonar-pro',                    label:'VIP интернет Pro 🌐', vendor:'AskHub'},
-    {id:'perplexity/sonar-reasoning',              label:'VIP аналитик 🌐', vendor:'AskHub'},
+    {id:'perplexity/sonar-reasoning-pro',          label:'VIP аналитик Pro 🌐', vendor:'AskHub'},
     {id:'perplexity/sonar',                        label:'VIP интернет 🌐', vendor:'AskHub'},
     {id:'deepseek/deepseek-chat-v3.1',             label:'DeepSeek V3.1', vendor:'DeepSeek'},
     {id:'meta-llama/llama-3.3-70b-instruct',       label:'Llama 3.3 70B', vendor:'Meta'},
-    {id:'openrouter/auto',                         label:'Авто (лучшая платная)', vendor:'OpenRouter'}
+    {id:'openrouter/auto',                         label:'OpenRouter Auto', vendor:'OpenRouter'}
   ]
 };
 

@@ -157,41 +157,66 @@ exports.handler = async function (event) {
       return json(402, { error: 'insufficient_credits', credits: record.credits, freeLeftToday, freeQuotaDaily: FREE_MSG_PER_DAY });
     }
 
-    let res;
-    try {
-      res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': process.env.URL || 'https://askhub.net',
-          'X-Title': 'AskHub'
-        },
-        body: JSON.stringify({ model, messages })
-      }, 22000);
-    } catch (e) {
-      const msg = e.name === 'AbortError'
-        ? 'Модель отвечала слишком долго. Попробуйте другой вопрос или другую модель.'
-        : ('Сеть недоступна: ' + e.message);
-      return json(504, { error: msg });
+    // askhub/auto — умный роутер по задаче с fallback-цепочкой до первого успеха
+    function pickAutoChain(msgs) {
+      const last = String(msgs[msgs.length-1]?.content || '').toLowerCase();
+      const needsWeb = /\b(сегодня|сейчас|последн|новост|курс|цена|акции|свеж|202[4-9]|202\d|today|latest|news|price|stock)\b/.test(last);
+      const needsCode = /\b(код|напиши.*функ|программ|javascript|python|typescript|react|api|bug|ошибка.*код|сqL|regex)\b/.test(last);
+      const needsReasoning = /\b(объясни|почему|разбер|сравни|проанализ|аргумент|логик|reason|analyz|compare)\b/.test(last) || last.length > 400;
+      const needsCreative = /\b(придумай|напиши.*пост|напиши.*текст|креатив|рекламн|слоган|story|creative)\b/.test(last);
+      if (needsWeb)       return ['perplexity/sonar-pro','perplexity/sonar','openai/gpt-5','google/gemini-2.5-pro'];
+      if (needsCode)      return ['anthropic/claude-sonnet-4','openai/gpt-5','deepseek/deepseek-chat-v3.1','google/gemini-2.5-pro'];
+      if (needsReasoning) return ['openai/gpt-5','anthropic/claude-sonnet-4','google/gemini-2.5-pro','perplexity/sonar-reasoning-pro'];
+      if (needsCreative)  return ['anthropic/claude-sonnet-4','openai/gpt-5','google/gemini-2.5-pro','openai/gpt-5-mini'];
+      // По умолчанию — быстро и качественно
+      return ['openai/gpt-5-mini','google/gemini-2.5-pro','openai/gpt-5','anthropic/claude-sonnet-4','deepseek/deepseek-chat-v3.1'];
     }
 
-    const parsed = await safeReadJson(res);
-    if (!parsed.ok) {
-      return json(res.status >= 400 ? res.status : 502, { error: parsed.error });
+    let res, data, actualModel = model;
+    const chain = (model === 'askhub/auto') ? pickAutoChain(messages) : [model];
+    let lastErr = null;
+    for (const tryModel of chain) {
+      try {
+        res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': process.env.URL || 'https://askhub.net',
+            'X-Title': 'AskHub'
+          },
+          body: JSON.stringify({ model: tryModel, messages })
+        }, 22000);
+      } catch (e) {
+        lastErr = e.name === 'AbortError'
+          ? 'Модель отвечала слишком долго'
+          : ('Сеть недоступна: ' + e.message);
+        continue;
+      }
+      const parsed = await safeReadJson(res);
+      if (!parsed.ok) { lastErr = parsed.error; continue; }
+      if (!res.ok) {
+        const msg = (parsed.data && (parsed.data.error?.message || parsed.data.error || parsed.data.message)) || `HTTP ${res.status}`;
+        lastErr = typeof msg === 'string' ? msg : JSON.stringify(msg);
+        // No endpoints / провайдер отвалился → пробуем следующую модель
+        if (/no endpoints|not found|unavailable|invalid model|deprecated/i.test(lastErr) && chain.length > 1) continue;
+        // Прочие 4xx/5xx — тоже пробуем fallback только в auto-режиме
+        if (chain.length > 1) continue;
+        return json(res.status, { error: lastErr });
+      }
+      data = parsed.data;
+      actualModel = tryModel;
+      break;
     }
-    const data = parsed.data;
-
-    if (!res.ok) {
-      const msg = (data && (data.error?.message || data.error || data.message)) || `Ошибка провайдера (HTTP ${res.status})`;
-      return json(res.status, { error: typeof msg === 'string' ? msg : JSON.stringify(msg) });
+    if (!data) {
+      return json(502, { error: 'Все модели в автоматической цепочке недоступны. Последняя ошибка: ' + (lastErr || 'неизвестно') });
     }
 
     let creditsCharged = 0;
     let costUsdLogged = 0;
     let usageLogged = {};
     let newFreeUsed = freeUsedToday;
-    const routedIdEarly = data.model || model;
+    const routedIdEarly = data.model || actualModel;
     if (isFree) {
       newFreeUsed = freeUsedToday + 1;
       record = await saveCredits(user, {
@@ -223,7 +248,7 @@ exports.handler = async function (event) {
     }
 
     const text = data.choices?.[0]?.message?.content || '';
-    const routedModel = data.model || model;
+    const routedModel = data.model || actualModel;
 
     // Аналитика — fire-and-forget
     logEvent({
