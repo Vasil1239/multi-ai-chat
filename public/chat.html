@@ -260,9 +260,12 @@ document.addEventListener('DOMContentLoaded', function(){
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-head">
-      <a href="/" class="brand" style="text-decoration:none;color:inherit" title="На главную"><span class="brand-mark"></span><span>AskHub</span></a>
-      <button class="new-btn" id="new-chat-btn" title="Новый чат" data-i18n="c.sb.new_chat">＋ Чат</button>
+    <div class="sidebar-head" style="flex-direction:column;align-items:stretch;gap:8px">
+      <a href="/" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);color:var(--ink-soft);font-size:12.5px;font-weight:600;text-decoration:none;width:fit-content" title="На главную">← На главную</a>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <a href="/" class="brand" style="text-decoration:none;color:inherit" title="На главную"><span class="brand-mark"></span><span>AskHub</span></a>
+        <button class="new-btn" id="new-chat-btn" title="Новый чат" data-i18n="c.sb.new_chat">＋ Чат</button>
+      </div>
     </div>
 
     <div class="sidebar-scroll">
@@ -305,7 +308,8 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="main">
     <div class="mobile-topbar">
       <button class="hamb" id="hamb">☰</button>
-      <a href="/" class="brand" style="flex:1;text-decoration:none;color:inherit" title="На главную"><span class="brand-mark"></span><span>AskHub</span></a>
+      <a href="/" style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);color:var(--ink-soft);font-size:12px;font-weight:700;text-decoration:none" title="На главную">← Главная</a>
+      <a href="/" class="brand" style="flex:1;text-decoration:none;color:inherit;justify-content:flex-end" title="На главную"><span class="brand-mark"></span><span>AskHub</span></a>
       <button class="new-btn" id="new-chat-btn-mob">＋</button>
     </div>
 
