@@ -63,7 +63,7 @@
 
 [[redirects]]
   from = "/api/checkout"
-  to = "/.netlify/functions/create-checkout"
+  to = "/.netlify/functions/checkout-lemonsqueezy"
   status = 200
 
 [[redirects]]

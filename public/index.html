@@ -1046,7 +1046,7 @@ document.addEventListener('DOMContentLoaded', function(){
       const r=await fetch('/api/checkout',{method:'POST',headers:accessHeaders({'Content-Type':'application/json'}),body:JSON.stringify({user:userEmail,pack:id})});
       if(r.status===401){showAccessGate();return}
       const d=await readJsonSafe(r);
-      if(d.url)location.href=d.url;else alert('Не удалось создать оплату: '+(d.error||'ошибка'));
+      const url=d.checkout_url||d.url;if(url)location.href=url;else alert('Не удалось создать оплату: '+(d.error||'ошибка'));
     }catch(e){alert('Ошибка сети: '+e.message)}
   }
 
