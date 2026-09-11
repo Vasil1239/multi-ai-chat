@@ -361,6 +361,138 @@ footer a:hover{color:var(--ink)}
 .quota-cta{margin-top:8px;font-size:12.5px;color:var(--ink-mute)}
 .quota-cta a{color:var(--accent);cursor:pointer;text-decoration:underline;font-weight:600}
 </style>
+<script>
+// ============ i18n (RU / EN / SR) ============
+window.ASKHUB_I18N = {
+  ru: {
+    'nav.open_chat':'Открыть чат →',
+    'nav.topup':'Пополнить',
+    'hero.badge':'10+ моделей ИИ в одном интерфейсе',
+    'hero.title':'Один чат.<br><span class="grad">Все AI-модели.</span>',
+    'hero.lead':'GPT, Claude, Gemini, Llama, DeepSeek — переключайтесь между лучшими моделями ИИ в одном окне. Бесплатные варианты без ограничений, платные — по цене копеек.',
+    'hero.cta_primary':'Начать бесплатно →',
+    'hero.cta_how':'Как это работает',
+    'features.title':'Зачем AskHub?',
+    'features.sub':'Один аккаунт вместо десяти подписок. Одна цена вместо разных биллингов.',
+    'feat.top.title':'Все топ-модели',
+    'feat.top.text':'OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral. Новые модели появляются автоматически.',
+    'feat.free.title':'Бесплатные модели',
+    'feat.free.text':'Целая полка бесплатных моделей — платите только за премиум-качество, когда оно вам нужно.',
+    'feat.pay.title':'Оплата за использование',
+    'feat.pay.text':'Кредиты вместо подписок. Не используете — не платите. Пакеты от $5.',
+    'feat.install.title':'Устанавливается на телефон',
+    'feat.install.text':'Запускается как приложение с иконки на рабочем столе. Работает офлайн и мгновенно. <span style="color:#c4b5ff;font-weight:600;">Как установить →</span>',
+    'feat.noreg.title':'Без регистрации',
+    'feat.noreg.text':'Только email как идентификатор. Никаких паролей и подтверждений по SMS.',
+    'feat.lang.title':'Отвечает на любом языке',
+    'feat.lang.text':'Русский, английский, сербский, любой другой. Модели понимают контекст на 100+ языках.',
+    'how.title':'Как это работает',
+    'how.sub':'Три шага — и вы уже общаетесь с любой моделью.',
+    'how.step1.title':'Введите email','how.step1.text':'Нужен только чтобы хранить ваш баланс. Без пароля.',
+    'how.step2.title':'Выберите режим: бесплатный или платный','how.step2.text':'Одна кнопка. Бесплатный — 0₽. Платный — премиум-модели за кредиты.',
+    'how.step3.title':'Пишите запрос — получаете ответ','how.step3.text':'Система сама подбирает лучшую доступную модель под вопрос.',
+    'install.title':'Установка на телефон',
+    'install.sub':'AskHub можно поставить как приложение — с иконкой на рабочем столе и без адресной строки. Занимает меньше 1 МБ.',
+    'install.fab':'📱 Установить на телефон',
+    'contact.title':'Есть вопрос или идея?',
+    'contact.sub':'Связаться с разработчиком напрямую — в Telegram отвечу в течение дня.',
+    'contact.btn':'Написать в Telegram',
+    'footer.legal':'Условия использования',
+    'footer.rights':'© 2026 AskHub · Работаем на OpenRouter',
+    'gate.access.title':'Требуется код доступа',
+    'gate.access.sub':'Введите пригласительный код, чтобы пользоваться этим приложением.',
+    'gate.access.ph':'Код доступа','gate.access.btn':'Войти',
+    'gate.email.title':'Начнём общение',
+    'gate.email.sub':'Введите email — это ваш идентификатор для сохранения баланса. Пароль не требуется.',
+    'gate.email.btn':'Начать'
+  },
+  en: {
+    'nav.open_chat':'Open chat →','nav.topup':'Top up',
+    'hero.badge':'10+ AI models in one interface',
+    'hero.title':'One chat.<br><span class="grad">All AI models.</span>',
+    'hero.lead':'GPT, Claude, Gemini, Llama, DeepSeek — switch between the best AI models in a single window. Free tiers with no limits, paid ones for pennies.',
+    'hero.cta_primary':'Start for free →','hero.cta_how':'How it works',
+    'features.title':'Why AskHub?','features.sub':'One account instead of ten subscriptions. One price instead of many billings.',
+    'feat.top.title':'All top models','feat.top.text':'OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral. New models added automatically.',
+    'feat.free.title':'Free models','feat.free.text':'A whole shelf of free models — pay only for premium quality when you need it.',
+    'feat.pay.title':'Pay as you go','feat.pay.text':'Credits instead of subscriptions. Don’t use it — don’t pay. Packs from $5.',
+    'feat.install.title':'Installs on your phone','feat.install.text':'Runs as an app from your home screen. Works offline and instantly. <span style="color:#c4b5ff;font-weight:600;">How to install →</span>',
+    'feat.noreg.title':'No signup','feat.noreg.text':'Just an email as your identifier. No passwords, no SMS confirmations.',
+    'feat.lang.title':'Replies in any language','feat.lang.text':'English, Russian, Serbian, any other. Models understand context in 100+ languages.',
+    'how.title':'How it works','how.sub':'Three steps and you’re chatting with any model.',
+    'how.step1.title':'Enter your email','how.step1.text':'Only to keep your balance. No password.',
+    'how.step2.title':'Pick a mode: free or paid','how.step2.text':'One button. Free — $0. Paid — premium models for credits.',
+    'how.step3.title':'Ask — get an answer','how.step3.text':'The system picks the best available model for your question.',
+    'install.title':'Install on your phone','install.sub':'AskHub installs like an app — with a home-screen icon and no address bar. Under 1 MB.',
+    'install.fab':'📱 Install on phone',
+    'contact.title':'Have a question or idea?','contact.sub':'Message the developer directly — I reply on Telegram within a day.','contact.btn':'Write on Telegram',
+    'footer.legal':'Terms of use','footer.rights':'© 2026 AskHub · Powered by OpenRouter',
+    'gate.access.title':'Access code required','gate.access.sub':'Enter your invite code to use the app.','gate.access.ph':'Access code','gate.access.btn':'Enter',
+    'gate.email.title':'Let’s chat','gate.email.sub':'Enter your email — it’s your identifier for saving credits. No password needed.','gate.email.btn':'Start'
+  },
+  sr: {
+    'nav.open_chat':'Otvori chat →','nav.topup':'Dopuni',
+    'hero.badge':'10+ AI modela u jednom interfejsu',
+    'hero.title':'Jedan chat.<br><span class="grad">Svi AI modeli.</span>',
+    'hero.lead':'GPT, Claude, Gemini, Llama, DeepSeek — prebacujte se između najboljih AI modela u jednom prozoru. Besplatne opcije bez ograničenja, plaćene — za pare.',
+    'hero.cta_primary':'Započni besplatno →','hero.cta_how':'Kako radi',
+    'features.title':'Zašto AskHub?','features.sub':'Jedan nalog umesto deset pretplata. Jedna cena umesto raznih računa.',
+    'feat.top.title':'Svi top modeli','feat.top.text':'OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral. Novi modeli se dodaju automatski.',
+    'feat.free.title':'Besplatni modeli','feat.free.text':'Čitava polica besplatnih modela — plaćate samo premium kvalitet kad vam treba.',
+    'feat.pay.title':'Plaćanje po korišćenju','feat.pay.text':'Krediti umesto pretplata. Ne koristite — ne plaćate. Paketi od $5.',
+    'feat.install.title':'Instalira se na telefon','feat.install.text':'Pokreće se kao aplikacija sa početnog ekrana. Radi oflajn i trenutno. <span style="color:#c4b5ff;font-weight:600;">Kako instalirati →</span>',
+    'feat.noreg.title':'Bez registracije','feat.noreg.text':'Samo email kao identifikator. Bez lozinki i SMS potvrda.',
+    'feat.lang.title':'Odgovara na bilo kom jeziku','feat.lang.text':'Srpski, engleski, ruski, bilo koji drugi. Modeli razumeju kontekst na 100+ jezika.',
+    'how.title':'Kako radi','how.sub':'Tri koraka — i već ćaskaš sa bilo kojim modelom.',
+    'how.step1.title':'Unesite email','how.step1.text':'Služi samo za čuvanje vašeg balansa. Bez lozinke.',
+    'how.step2.title':'Izaberite režim: besplatni ili plaćeni','how.step2.text':'Jedno dugme. Besplatni — 0€. Plaćeni — premium modeli za kredite.',
+    'how.step3.title':'Postavite pitanje — dobijte odgovor','how.step3.text':'Sistem sam bira najbolji dostupan model za vaše pitanje.',
+    'install.title':'Instalacija na telefon','install.sub':'AskHub se instalira kao aplikacija — sa ikonicom na početnom ekranu, bez adresne linije. Manje od 1 MB.',
+    'install.fab':'📱 Instaliraj na telefon',
+    'contact.title':'Imate pitanje ili ideju?','contact.sub':'Javite se programeru direktno — na Telegram odgovaram u toku dana.','contact.btn':'Piši na Telegramu',
+    'footer.legal':'Uslovi korišćenja','footer.rights':'© 2026 AskHub · Radi na OpenRouter-u',
+    'gate.access.title':'Potreban je kod pristupa','gate.access.sub':'Unesite kod pozivnice za korišćenje aplikacije.','gate.access.ph':'Kod pristupa','gate.access.btn':'Uđi',
+    'gate.email.title':'Krenimo u razgovor','gate.email.sub':'Unesite email — to je vaš identifikator za čuvanje balansa. Lozinka nije potrebna.','gate.email.btn':'Započni'
+  }
+};
+window.ASKHUB_LANG = (function(){
+  try {
+    let saved = localStorage.getItem('askhub_lang');
+    if (saved && ['ru','en','sr'].includes(saved)) return saved;
+    const nav = (navigator.language||'ru').toLowerCase();
+    if (nav.startsWith('sr')) return 'sr';
+    if (nav.startsWith('en')) return 'en';
+    return 'ru';
+  } catch(_) { return 'ru'; }
+})();
+window.applyI18n = function(lang){
+  const L = window.ASKHUB_I18N[lang] || window.ASKHUB_I18N.ru;
+  document.documentElement.setAttribute('lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n'); if (L[k] != null) el.textContent = L[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.getAttribute('data-i18n-html'); if (L[k] != null) el.innerHTML = L[k];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const k = el.getAttribute('data-i18n-placeholder'); if (L[k] != null) el.setAttribute('placeholder', L[k]);
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    const on = b.getAttribute('data-lang') === lang;
+    b.style.background = on ? 'linear-gradient(135deg,#a78bfa,#22d3ee)' : 'transparent';
+    b.style.color = on ? '#0a0a0f' : '';
+  });
+};
+window.setLang = function(lang){
+  window.ASKHUB_LANG = lang;
+  try { localStorage.setItem('askhub_lang', lang); } catch(_) {}
+  window.applyI18n(lang);
+};
+document.addEventListener('DOMContentLoaded', function(){
+  window.applyI18n(window.ASKHUB_LANG);
+  document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => window.setLang(b.getAttribute('data-lang'))));
+});
+</script>
 </head>
 <body>
 
@@ -374,9 +506,14 @@ footer a:hover{color:var(--ink)}
     <div class="nav-actions">
       <div id="credits-box">
         <span class="pill credits-pill" id="credits-pill">— кредитов</span>
-        <button class="pill primary" id="topup-toggle">Пополнить</button>
+        <button class="pill primary" id="topup-toggle" data-i18n="nav.topup">Пополнить</button>
       </div>
-      <a href="/chat.html" class="pill primary" id="start-cta" style="background:linear-gradient(135deg,#a78bfa,#22d3ee);color:#0a0a0f;font-weight:800">Открыть чат →</a>
+      <a href="/chat.html" class="pill primary" id="start-cta" data-i18n="nav.open_chat" style="background:linear-gradient(135deg,#a78bfa,#22d3ee);color:#0a0a0f;font-weight:800">Открыть чат →</a>
+      <div class="lang-switch" role="tablist" aria-label="Language" style="display:inline-flex;gap:2px;margin-left:8px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:2px">
+        <button type="button" data-lang="ru" class="lang-btn" style="padding:5px 9px;border:0;background:transparent;color:var(--ink-soft);font-weight:700;font-size:12px;border-radius:8px;cursor:pointer">RU</button>
+        <button type="button" data-lang="en" class="lang-btn" style="padding:5px 9px;border:0;background:transparent;color:var(--ink-soft);font-weight:700;font-size:12px;border-radius:8px;cursor:pointer">EN</button>
+        <button type="button" data-lang="sr" class="lang-btn" style="padding:5px 9px;border:0;background:transparent;color:var(--ink-soft);font-weight:700;font-size:12px;border-radius:8px;cursor:pointer">SR</button>
+      </div>
     </div>
   </div>
 </nav>
@@ -385,12 +522,12 @@ footer a:hover{color:var(--ink)}
 <section class="hero" id="top">
   <div class="hero-in">
     <div class="fade-in">
-      <div class="hero-badge"><span class="live-dot"></span> 10+ моделей ИИ в одном интерфейсе</div>
-      <h1>Один чат.<br><span class="grad">Все AI-модели.</span></h1>
-      <p class="lead">GPT, Claude, Gemini, Llama, DeepSeek — переключайтесь между лучшими моделями ИИ в одном окне. Бесплатные варианты без ограничений, платные — по цене копеек.</p>
+      <div class="hero-badge"><span class="live-dot"></span> <span data-i18n="hero.badge">10+ моделей ИИ в одном интерфейсе</span></div>
+      <h1 data-i18n-html="hero.title">Один чат.<br><span class="grad">Все AI-модели.</span></h1>
+      <p class="lead" data-i18n="hero.lead">GPT, Claude, Gemini, Llama, DeepSeek — переключайтесь между лучшими моделями ИИ в одном окне. Бесплатные варианты без ограничений, платные — по цене копеек.</p>
       <div class="hero-actions">
-        <a href="/chat.html" class="btn-lg btn-primary">Начать бесплатно →</a>
-        <a href="#how" class="btn-lg btn-secondary">Как это работает</a>
+        <a href="/chat.html" class="btn-lg btn-primary" data-i18n="hero.cta_primary">Начать бесплатно →</a>
+        <a href="#how" class="btn-lg btn-secondary" data-i18n="hero.cta_how">Как это работает</a>
       </div>
       <div class="trust">
         <span><b>20</b> кредитов на старте</span>
@@ -416,39 +553,39 @@ footer a:hover{color:var(--ink)}
 <!-- FEATURES -->
 <section class="section">
   <div class="section-title">
-    <h2>Зачем AskHub?</h2>
-    <p>Один аккаунт вместо десяти подписок. Одна цена вместо разных биллингов.</p>
+    <h2 data-i18n="features.title">Зачем AskHub?</h2>
+    <p data-i18n="features.sub">Один аккаунт вместо десяти подписок. Одна цена вместо разных биллингов.</p>
   </div>
   <div class="grid-3">
     <div class="feat">
       <div class="feat-icon">⚡</div>
-      <h3>Все топ-модели</h3>
-      <p>OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral. Новые модели появляются автоматически.</p>
+      <h3 data-i18n="feat.top.title">Все топ-модели</h3>
+      <p data-i18n="feat.top.text">OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral. Новые модели появляются автоматически.</p>
     </div>
     <div class="feat">
       <div class="feat-icon">🆓</div>
-      <h3>Бесплатные модели</h3>
-      <p>Целая полка бесплатных моделей — платите только за премиум-качество, когда оно вам нужно.</p>
+      <h3 data-i18n="feat.free.title">Бесплатные модели</h3>
+      <p data-i18n="feat.free.text">Целая полка бесплатных моделей — платите только за премиум-качество, когда оно вам нужно.</p>
     </div>
     <div class="feat">
       <div class="feat-icon">💳</div>
-      <h3>Оплата за использование</h3>
-      <p>Кредиты вместо подписок. Не используете — не платите. Пакеты от $5.</p>
+      <h3 data-i18n="feat.pay.title">Оплата за использование</h3>
+      <p data-i18n="feat.pay.text">Кредиты вместо подписок. Не используете — не платите. Пакеты от $5.</p>
     </div>
     <a class="feat" href="#install">
       <div class="feat-icon">📱</div>
-      <h3>Устанавливается на телефон</h3>
-      <p>Запускается как приложение с иконки на рабочем столе. Работает офлайн и мгновенно. <span style="color:#c4b5ff;font-weight:600;">Как установить →</span></p>
+      <h3 data-i18n="feat.install.title">Устанавливается на телефон</h3>
+      <p data-i18n-html="feat.install.text">Запускается как приложение с иконки на рабочем столе. Работает офлайн и мгновенно. <span style="color:#c4b5ff;font-weight:600;">Как установить →</span></p>
     </a>
     <div class="feat">
       <div class="feat-icon">🔒</div>
-      <h3>Без регистрации</h3>
-      <p>Только email как идентификатор. Никаких паролей и подтверждений по SMS.</p>
+      <h3 data-i18n="feat.noreg.title">Без регистрации</h3>
+      <p data-i18n="feat.noreg.text">Только email как идентификатор. Никаких паролей и подтверждений по SMS.</p>
     </div>
     <div class="feat">
       <div class="feat-icon">🌍</div>
-      <h3>Отвечает на любом языке</h3>
-      <p>Русский, английский, сербский, любой другой. Модели понимают контекст на 100+ языках.</p>
+      <h3 data-i18n="feat.lang.title">Отвечает на любом языке</h3>
+      <p data-i18n="feat.lang.text">Русский, английский, сербский, любой другой. Модели понимают контекст на 100+ языках.</p>
     </div>
   </div>
 </section>
@@ -459,13 +596,13 @@ footer a:hover{color:var(--ink)}
     <img src="/img/chat.jpg" alt="Как работает AskHub">
     <div>
       <div class="section-title" style="text-align:left;margin-bottom:20px">
-        <h2 style="text-align:left">Как это работает</h2>
-        <p style="text-align:left">Три шага — и вы уже общаетесь с любой моделью.</p>
+        <h2 data-i18n="how.title" style="text-align:left">Как это работает</h2>
+        <p data-i18n="how.sub" style="text-align:left">Три шага — и вы уже общаетесь с любой моделью.</p>
       </div>
       <ol class="steps">
-        <li><div class="num">1</div><div><h4>Введите email</h4><p>Нужен только чтобы хранить ваш баланс. Без пароля.</p></div></li>
-        <li><div class="num">2</div><div><h4>Выберите режим: бесплатный или платный</h4><p>Одна кнопка. Бесплатный — 0₽. Платный — премиум-модели за кредиты.</p></div></li>
-        <li><div class="num">3</div><div><h4>Пишите запрос — получаете ответ</h4><p>Система сама подбирает лучшую доступную модель под вопрос.</p></div></li>
+        <li><div class="num">1</div><div><h4 data-i18n="how.step1.title">Введите email</h4><p data-i18n="how.step1.text">Нужен только чтобы хранить ваш баланс. Без пароля.</p></div></li>
+        <li><div class="num">2</div><div><h4 data-i18n="how.step2.title">Выберите режим: бесплатный или платный</h4><p data-i18n="how.step2.text">Одна кнопка. Бесплатный — 0₽. Платный — премиум-модели за кредиты.</p></div></li>
+        <li><div class="num">3</div><div><h4 data-i18n="how.step3.title">Пишите запрос — получаете ответ</h4><p data-i18n="how.step3.text">Система сама подбирает лучшую доступную модель под вопрос.</p></div></li>
       </ol>
     </div>
   </div>
@@ -474,8 +611,8 @@ footer a:hover{color:var(--ink)}
 <!-- INSTALL INSTRUCTIONS -->
 <section class="section" id="install">
   <div class="section-title">
-    <h2>Установка на телефон</h2>
-    <p>AskHub можно поставить как приложение — с иконкой на рабочем столе и без адресной строки. Занимает меньше 1 МБ.</p>
+    <h2 data-i18n="install.title">Установка на телефон</h2>
+    <p data-i18n="install.sub">AskHub можно поставить как приложение — с иконкой на рабочем столе и без адресной строки. Занимает меньше 1 МБ.</p>
   </div>
   <div class="install-grid">
     <div class="install-card">
@@ -551,20 +688,20 @@ footer a:hover{color:var(--ink)}
 <!-- APP: gate + chat -->
 <section class="app-shell" id="app">
   <div class="access-gate" id="access-gate" style="display:none;">
-    <h3>Требуется код доступа</h3>
-    <p>Введите пригласительный код, чтобы пользоваться этим приложением.</p>
+    <h3 data-i18n="gate.access.title">Требуется код доступа</h3>
+    <p data-i18n="gate.access.sub">Введите пригласительный код, чтобы пользоваться этим приложением.</p>
     <div class="gate-row">
-      <input id="access-input" type="text" placeholder="Код доступа" autocomplete="off">
-      <button id="access-btn">Войти</button>
+      <input id="access-input" type="text" placeholder="Код доступа" autocomplete="off" data-i18n-placeholder="gate.access.ph">
+      <button id="access-btn" data-i18n="gate.access.btn">Войти</button>
     </div>
   </div>
 
   <div class="gate" id="gate" style="display:none;">
-    <h3>Начнём общение</h3>
-    <p>Введите email — это ваш идентификатор для сохранения баланса. Пароль не требуется.</p>
+    <h3 data-i18n="gate.email.title">Начнём общение</h3>
+    <p data-i18n="gate.email.sub">Введите email — это ваш идентификатор для сохранения баланса. Пароль не требуется.</p>
     <div class="gate-row">
       <input id="email-input" type="email" placeholder="you@example.com" autocomplete="email">
-      <button id="gate-btn">Начать</button>
+      <button id="gate-btn" data-i18n="gate.email.btn">Начать</button>
     </div>
   </div>
 
@@ -625,20 +762,20 @@ footer a:hover{color:var(--ink)}
 <!-- CONTACT -->
 <section class="contact">
   <div class="contact-card">
-    <h2>Есть вопрос или идея?</h2>
-    <p>Связаться с разработчиком напрямую — в Telegram отвечу в течение дня.</p>
+    <h2 data-i18n="contact.title">Есть вопрос или идея?</h2>
+    <p data-i18n="contact.sub">Связаться с разработчиком напрямую — в Telegram отвечу в течение дня.</p>
     <a href="https://t.me/fortyna1239" target="_blank" rel="noopener" class="tg-btn">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.999 15.2l-.396 5.575c.567 0 .812-.244 1.107-.535l2.657-2.54 5.507 4.03c1.01.556 1.723.264 1.996-.936l3.618-16.943.001-.001c.32-1.498-.542-2.083-1.526-1.72L1.216 9.34c-1.463.568-1.44 1.384-.25 1.75l5.09 1.586L17.877 5.28c.556-.367 1.062-.164.646.203"/></svg>
-      Написать в Telegram
+      <span data-i18n="contact.btn">Написать в Telegram</span>
     </a>
   </div>
 </section>
 
 <footer>
-  <p><a href="/legal.html">Условия использования</a> · © 2026 AskHub · Работаем на OpenRouter</p>
+  <p><a href="/legal.html" data-i18n="footer.legal">Условия использования</a> · <span data-i18n="footer.rights">© 2026 AskHub · Работаем на OpenRouter</span></p>
 </footer>
 
-<button class="install-fab" id="install-fab">📱 Установить на телефон</button>
+<button class="install-fab" id="install-fab" data-i18n="install.fab">📱 Установить на телефон</button>
 
 <script>
 (function(){

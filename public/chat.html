@@ -148,17 +148,107 @@ a{color:var(--accent);text-decoration:none}
 ::-webkit-scrollbar-thumb{background:var(--panel-3);border-radius:100px}
 ::-webkit-scrollbar-thumb:hover{background:var(--line-strong)}
 </style>
+<script>
+// ============ i18n (RU / EN / SR) — chat ============
+window.ASKHUB_I18N = {
+  ru: {
+    'c.gate.title':'Войти в AskHub',
+    'c.gate.sub':'Введите ваш email — по нему сохраняются кредиты и история чатов.',
+    'c.gate.access_ph':'Код доступа (если требуется)','c.gate.btn':'Войти',
+    'c.sb.new_chat':'＋ Чат','c.sb.projects':'Проекты','c.sb.chats':'Чаты в проекте',
+    'c.sb.credits_short':'кред','c.sb.topup':'Пополнить','c.sb.logout':'Выйти',
+    'c.head.new':'Новый чат',
+    'c.mode.free':'Бесплатно','c.mode.paid':'Платно','c.mode.image':'Картинка',
+    'c.img.standard':'Стандарт','c.img.cr':'кр',
+    'c.empty.title':'Чем помочь?','c.empty.sub':'Выберите модель и задайте вопрос — или начните с одного из готовых сценариев.',
+    'c.composer.ph':'Спросите что угодно…','c.composer.ph_img':'Опишите картинку…',
+    'c.foot.msgs':'Сообщений в этом треде:','c.foot.free_today':'Бесплатных сегодня:',
+    'c.modal.new_project':'Новый проект','c.modal.project_ph':'Название проекта','c.modal.cancel':'Отмена'
+  },
+  en: {
+    'c.gate.title':'Sign in to AskHub','c.gate.sub':'Enter your email — credits and chat history are saved by it.',
+    'c.gate.access_ph':'Access code (if required)','c.gate.btn':'Enter',
+    'c.sb.new_chat':'＋ Chat','c.sb.projects':'Projects','c.sb.chats':'Chats in project',
+    'c.sb.credits_short':'cr','c.sb.topup':'Top up','c.sb.logout':'Log out',
+    'c.head.new':'New chat',
+    'c.mode.free':'Free','c.mode.paid':'Paid','c.mode.image':'Image',
+    'c.img.standard':'Standard','c.img.cr':'cr',
+    'c.empty.title':'How can I help?','c.empty.sub':'Pick a model and ask a question — or start with one of the ready-made prompts.',
+    'c.composer.ph':'Ask anything…','c.composer.ph_img':'Describe the image…',
+    'c.foot.msgs':'Messages in this thread:','c.foot.free_today':'Free today:',
+    'c.modal.new_project':'New project','c.modal.project_ph':'Project name','c.modal.cancel':'Cancel'
+  },
+  sr: {
+    'c.gate.title':'Prijava na AskHub','c.gate.sub':'Unesite email — po njemu se čuvaju krediti i istorija razgovora.',
+    'c.gate.access_ph':'Kod pristupa (ako je potreban)','c.gate.btn':'Uđi',
+    'c.sb.new_chat':'＋ Chat','c.sb.projects':'Projekti','c.sb.chats':'Razgovori u projektu',
+    'c.sb.credits_short':'kr','c.sb.topup':'Dopuni','c.sb.logout':'Odjava',
+    'c.head.new':'Novi razgovor',
+    'c.mode.free':'Besplatno','c.mode.paid':'Plaćeno','c.mode.image':'Slika',
+    'c.img.standard':'Standard','c.img.cr':'kr',
+    'c.empty.title':'Kako mogu da pomognem?','c.empty.sub':'Izaberite model i postavite pitanje — ili krenite od gotovog primera.',
+    'c.composer.ph':'Pitajte bilo šta…','c.composer.ph_img':'Opišite sliku…',
+    'c.foot.msgs':'Poruka u ovom razgovoru:','c.foot.free_today':'Besplatnih danas:',
+    'c.modal.new_project':'Novi projekat','c.modal.project_ph':'Naziv projekta','c.modal.cancel':'Otkaži'
+  }
+};
+window.ASKHUB_LANG = (function(){
+  try {
+    let saved = localStorage.getItem('askhub_lang');
+    if (saved && ['ru','en','sr'].includes(saved)) return saved;
+    const nav = (navigator.language||'ru').toLowerCase();
+    if (nav.startsWith('sr')) return 'sr';
+    if (nav.startsWith('en')) return 'en';
+    return 'ru';
+  } catch(_) { return 'ru'; }
+})();
+window.applyI18n = function(lang){
+  const L = window.ASKHUB_I18N[lang] || window.ASKHUB_I18N.ru;
+  document.documentElement.setAttribute('lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n'); if (L[k] != null) el.textContent = L[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.getAttribute('data-i18n-html'); if (L[k] != null) el.innerHTML = L[k];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const k = el.getAttribute('data-i18n-placeholder'); if (L[k] != null) el.setAttribute('placeholder', L[k]);
+  });
+  // Плейсхолдер ввода зависит от режима (картинка/текст)
+  try {
+    const inp = document.getElementById('input');
+    const activeMode = document.querySelector('.mode-tabs button.active');
+    if (inp && activeMode && activeMode.getAttribute('data-mode') === 'image') {
+      inp.setAttribute('placeholder', L['c.composer.ph_img'] || L['c.composer.ph']);
+    }
+  } catch(_) {}
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    const on = b.getAttribute('data-lang') === lang;
+    b.style.background = on ? 'linear-gradient(135deg,#a78bfa,#22d3ee)' : 'transparent';
+    b.style.color = on ? '#0a0a0f' : '';
+  });
+};
+window.setLang = function(lang){
+  window.ASKHUB_LANG = lang;
+  try { localStorage.setItem('askhub_lang', lang); } catch(_) {}
+  window.applyI18n(lang);
+};
+document.addEventListener('DOMContentLoaded', function(){
+  window.applyI18n(window.ASKHUB_LANG);
+  document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => window.setLang(b.getAttribute('data-lang'))));
+});
+</script>
 </head>
 <body>
 
 <!-- Gate -->
 <div id="gate" class="gate-overlay">
   <div class="gate-card">
-    <h2>Войти в AskHub</h2>
-    <p>Введите ваш email — по нему сохраняются кредиты и история чатов.</p>
+    <h2 data-i18n="c.gate.title">Войти в AskHub</h2>
+    <p data-i18n="c.gate.sub">Введите ваш email — по нему сохраняются кредиты и история чатов.</p>
     <input id="gate-email" type="email" placeholder="you@example.com" autocomplete="email">
-    <input id="gate-access" type="text" placeholder="Код доступа (если требуется)" style="display:none">
-    <button id="gate-btn">Войти</button>
+    <input id="gate-access" type="text" placeholder="Код доступа (если требуется)" data-i18n-placeholder="c.gate.access_ph" style="display:none">
+    <button id="gate-btn" data-i18n="c.gate.btn">Войти</button>
     <div id="gate-err" class="gate-err" style="display:none"></div>
   </div>
 </div>
@@ -171,17 +261,17 @@ a{color:var(--accent);text-decoration:none}
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
       <div class="brand"><span class="brand-mark"></span><span>AskHub</span></div>
-      <button class="new-btn" id="new-chat-btn" title="Новый чат">＋ Чат</button>
+      <button class="new-btn" id="new-chat-btn" title="Новый чат" data-i18n="c.sb.new_chat">＋ Чат</button>
     </div>
 
     <div class="sidebar-scroll">
       <div class="section-label">
-        <span>Проекты</span>
+        <span data-i18n="c.sb.projects">Проекты</span>
         <button class="mini-btn" id="new-project-btn" title="Новый проект">＋</button>
       </div>
       <div id="projects-list"></div>
 
-      <div class="section-label"><span>Чаты в проекте</span></div>
+      <div class="section-label"><span data-i18n="c.sb.chats">Чаты в проекте</span></div>
       <div id="chats-list"></div>
     </div>
 
@@ -195,12 +285,17 @@ a{color:var(--accent);text-decoration:none}
         <div id="referral-stats" style="margin-top:6px;font-size:10.5px;color:var(--ink-mute)"></div>
       </div>
       <div class="foot-row">
-        <span class="pill" title="Баланс кредитов"><b id="credits-value">—</b> кред</span>
-        <span class="topup-link" id="topup-link">Пополнить</span>
+        <span class="pill" title="Баланс кредитов"><b id="credits-value">—</b> <span data-i18n="c.sb.credits_short">кред</span></span>
+        <span class="topup-link" id="topup-link" data-i18n="c.sb.topup">Пополнить</span>
+      </div>
+      <div class="lang-switch" style="display:flex;gap:2px;margin:8px 0;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:2px;width:fit-content">
+        <button type="button" data-lang="ru" class="lang-btn" style="padding:4px 8px;border:0;background:transparent;color:var(--ink-soft);font-weight:700;font-size:11px;border-radius:6px;cursor:pointer">RU</button>
+        <button type="button" data-lang="en" class="lang-btn" style="padding:4px 8px;border:0;background:transparent;color:var(--ink-soft);font-weight:700;font-size:11px;border-radius:6px;cursor:pointer">EN</button>
+        <button type="button" data-lang="sr" class="lang-btn" style="padding:4px 8px;border:0;background:transparent;color:var(--ink-soft);font-weight:700;font-size:11px;border-radius:6px;cursor:pointer">SR</button>
       </div>
       <div class="foot-row">
         <span id="user-email-lbl" title="" style="color:var(--ink-mute);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1"></span>
-        <span class="topup-link" id="logout-link" style="font-size:11.5px">Выйти</span>
+        <span class="topup-link" id="logout-link" style="font-size:11.5px" data-i18n="c.sb.logout">Выйти</span>
       </div>
     </div>
   </aside>
@@ -214,28 +309,28 @@ a{color:var(--accent);text-decoration:none}
     </div>
 
     <div class="chat-head">
-      <div class="chat-title" id="chat-title">Новый чат</div>
+      <div class="chat-title" id="chat-title" data-i18n="c.head.new">Новый чат</div>
       <div class="head-controls">
         <div class="mode-tabs">
-          <button class="active" data-mode="free" id="tab-free">Бесплатно</button>
-          <button data-mode="paid" id="tab-paid">Платно</button>
-          <button data-mode="image" id="tab-image">Картинка</button>
+          <button class="active" data-mode="free" id="tab-free" data-i18n="c.mode.free">Бесплатно</button>
+          <button data-mode="paid" id="tab-paid" data-i18n="c.mode.paid">Платно</button>
+          <button data-mode="image" id="tab-image" data-i18n="c.mode.image">Картинка</button>
           <!-- вкладка "🔎 Поиск" (собственный Tavily-оркестратор) скрыта до оплаты Tavily API. Когда ключ будет — вернуть одной строкой:
           <button data-mode="search" id="tab-search">🔎 Поиск</button> -->
         </div>
         <select id="model-select" class="model-select-inline"></select>
       </div>
       <div class="img-quality" id="img-quality">
-        <label><input type="radio" name="imgq" value="standard" checked> Стандарт · 65 кр</label>
-        <label><input type="radio" name="imgq" value="hd"> HD · 150 кр</label>
-        <label><input type="radio" name="imgq" value="ultra"> Ultra · 300 кр</label>
+        <label><input type="radio" name="imgq" value="standard" checked> <span data-i18n="c.img.standard">Стандарт</span> · 65 <span data-i18n="c.img.cr">кр</span></label>
+        <label><input type="radio" name="imgq" value="hd"> HD · 150 <span data-i18n="c.img.cr">кр</span></label>
+        <label><input type="radio" name="imgq" value="ultra"> Ultra · 300 <span data-i18n="c.img.cr">кр</span></label>
       </div>
     </div>
 
     <div class="thread-wrap" id="thread-wrap">
       <div id="empty-hero" class="empty-hero">
-        <h2>Чем помочь?</h2>
-        <p>Выберите модель и задайте вопрос — или начните с одного из готовых сценариев.</p>
+        <h2 data-i18n="c.empty.title">Чем помочь?</h2>
+        <p data-i18n="c.empty.sub">Выберите модель и задайте вопрос — или начните с одного из готовых сценариев.</p>
         <div class="suggest-grid">
           <button class="suggest" data-p="Напиши короткий рекламный пост в Telegram о моём продукте — опиши сам продукт в 3–5 строк">📢 Рекламный пост</button>
           <button class="suggest" data-p="Объясни простыми словами, как работает бизнес-модель SaaS">💡 Объяснить тему</button>
@@ -249,13 +344,13 @@ a{color:var(--accent);text-decoration:none}
     <div class="composer-wrap">
       <div class="composer">
         <div class="composer-inner">
-          <textarea id="input" placeholder="Спросите что угодно…" rows="1"></textarea>
+          <textarea id="input" placeholder="Спросите что угодно…" data-i18n-placeholder="c.composer.ph" rows="1"></textarea>
           <button class="send-btn" id="send-btn" title="Отправить">➤</button>
         </div>
       </div>
       <div class="composer-foot">
-        <span class="limit-tag" id="limit-tag"><span>Сообщений в этом треде:</span> <b id="msg-count">0</b> / 100</span>
-        <span id="free-tag">Бесплатных сегодня: <b id="free-left">—</b>/30</span>
+        <span class="limit-tag" id="limit-tag"><span data-i18n="c.foot.msgs">Сообщений в этом треде:</span> <b id="msg-count">0</b> / 100</span>
+        <span id="free-tag"><span data-i18n="c.foot.free_today">Бесплатных сегодня:</span> <b id="free-left">—</b>/30</span>
       </div>
     </div>
   </div>
@@ -264,10 +359,10 @@ a{color:var(--accent);text-decoration:none}
 <!-- Modals -->
 <div class="modal-back" id="modal-back">
   <div class="modal">
-    <h3 id="modal-title">Новый проект</h3>
-    <input id="modal-input" type="text" placeholder="Название проекта">
+    <h3 id="modal-title" data-i18n="c.modal.new_project">Новый проект</h3>
+    <input id="modal-input" type="text" placeholder="Название проекта" data-i18n-placeholder="c.modal.project_ph">
     <div class="modal-row">
-      <button class="btn-ghost" id="modal-cancel">Отмена</button>
+      <button class="btn-ghost" id="modal-cancel" data-i18n="c.modal.cancel">Отмена</button>
       <button class="btn-primary" id="modal-ok">OK</button>
     </div>
   </div>
