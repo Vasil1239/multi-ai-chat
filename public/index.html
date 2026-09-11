@@ -376,7 +376,7 @@ footer a:hover{color:var(--ink)}
         <span class="pill credits-pill" id="credits-pill">— кредитов</span>
         <button class="pill primary" id="topup-toggle">Пополнить</button>
       </div>
-      <a href="/chat.html" class="pill primary" id="start-cta">Открыть чат</a>
+      <a href="/chat.html" class="pill primary" id="start-cta" style="background:linear-gradient(135deg,#a78bfa,#22d3ee);color:#0a0a0f;font-weight:800">Открыть чат →</a>
     </div>
   </div>
 </nav>
@@ -904,10 +904,14 @@ footer a:hover{color:var(--ink)}
   function startApp(email){
     userEmail=email;localStorage.setItem('multi_user_email',email);
     $('gate').style.display='none';$('credits-box').style.display='flex';
-    $('chat').style.display='block';$('start-cta').style.display='none';
-    loadChats();ensureActiveChat();renderChatList();renderThread();
+    if ($('chat')) $('chat').style.display='block';
+    // Кнопка «Открыть чат» в шапке ведёт на отдельную /chat.html — её не прячем.
+    $('start-cta').style.display='';
+    if (typeof loadChats==='function') loadChats();
+    if (typeof ensureActiveChat==='function') ensureActiveChat();
+    if (typeof renderChatList==='function') renderChatList();
+    if (typeof renderThread==='function') renderThread();
     refreshCredits();
-    setTimeout(()=>$('chat').scrollIntoView({behavior:'smooth',block:'start'}),100);
   }
   function showAccessGate(){$('gate').style.display='none';$('chat').style.display='none';$('credits-box').style.display='none';$('access-gate').style.display='block'}
 
