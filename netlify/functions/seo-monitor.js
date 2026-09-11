@@ -76,8 +76,10 @@ async function checkPage(path) {
     c.canonical = (html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i) || [])[1] || null;
     c.hreflangCount = (html.match(/rel=["']alternate["'][^>]+hreflang=/g) || []).length;
     c.hasSchema = /application\/ld\+json/i.test(html);
-    c.hasYm = /mc\.yandex\.ru\/metrika/.test(html) || /ym\(\s*\d+/.test(html);
-    c.hasGa = /googletagmanager\.com\/gtag/.test(html) || /gtag\(\s*['"]config/.test(html);
+    // Analytics may be inlined OR loaded via /analytics.js
+    const hasAnalyticsJs = /src=["'][^"']*\/analytics\.js/.test(html);
+    c.hasYm = hasAnalyticsJs || /mc\.yandex\.ru\/metrika/.test(html) || /ym\(\s*\d+/.test(html);
+    c.hasGa = hasAnalyticsJs || /googletagmanager\.com\/gtag/.test(html) || /gtag\(\s*['"]config/.test(html);
     c.hasYandexVerification = /yandex-verification/i.test(html);
     c.htmlSize = html.length;
   }
