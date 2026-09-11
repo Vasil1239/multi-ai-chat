@@ -12,6 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="/img/icon.svg">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AskHub">
@@ -367,7 +368,7 @@ footer a:hover{color:var(--ink)}
   body{padding-bottom:60px}
 }
 /* Скрыть бейдж «Powered by Netlify» */
-[class*="powered-by"],[id*="powered-by"],iframe[src*="netlify"],a[href*="netlify.com"][target="_blank"]{display:none !important;visibility:hidden !important;pointer-events:none !important}
+[class*="powered-by"],[id*="powered-by"],[class*="nf-branding"],[id*="nf-branding"],[class*="netlify-badge"],[class*="netlify-hud"],[id*="netlify-branding"],iframe[src*="netlify"],a[href*="netlify.com"]{display:none !important;visibility:hidden !important;pointer-events:none !important;opacity:0 !important}
 
 /* ============ MOBILE OVERRIDES ============ */
 @media(max-width:640px){
@@ -460,6 +461,8 @@ footer a:hover{color:var(--ink)}
 // ============ i18n (RU / EN / SR) ============
 window.ASKHUB_I18N = {
   ru: {
+    'page.title':'AskHub — один чат, все AI-модели',
+    'page.description':'Один чат — доступ ко всем моделям ИИ: OpenAI, Anthropic, Google, Llama, DeepSeek. Бесплатные модели без ограничений и премиум за копейки.',
     'nav.open_chat':'Открыть чат →',
     'nav.topup':'Пополнить',
     'nav.blog':'Блог',
@@ -503,6 +506,8 @@ window.ASKHUB_I18N = {
     'gate.email.btn':'Начать'
   },
   en: {
+    'page.title':'AskHub — one chat, all AI models',
+    'page.description':'One chat — access every AI model: OpenAI, Anthropic, Google, Llama, DeepSeek. Free models with no limits and premium ones for pennies.',
     'nav.open_chat':'Open chat →','nav.topup':'Top up','nav.blog':'Blog',
     'hero.badge':'10+ AI models in one interface',
     'hero.title':'One chat.<br><span class="grad">All AI models.</span>',
@@ -527,6 +532,8 @@ window.ASKHUB_I18N = {
     'gate.email.title':'Let’s chat','gate.email.sub':'Enter your email — it’s your identifier for saving credits. No password needed.','gate.email.btn':'Start'
   },
   sr: {
+    'page.title':'AskHub — jedan chat, svi AI modeli',
+    'page.description':'Jedan chat — pristup svim AI modelima: OpenAI, Anthropic, Google, Llama, DeepSeek. Besplatni modeli bez ograničenja i premium za pare.',
     'nav.open_chat':'Otvori chat →','nav.topup':'Dopuni','nav.blog':'Blog',
     'hero.badge':'10+ AI modela u jednom interfejsu',
     'hero.title':'Jedan chat.<br><span class="grad">Svi AI modeli.</span>',
@@ -564,6 +571,18 @@ window.ASKHUB_LANG = (function(){
 window.applyI18n = function(lang){
   const L = window.ASKHUB_I18N[lang] || window.ASKHUB_I18N.ru;
   document.documentElement.setAttribute('lang', lang);
+  // Title + meta description + OG
+  if (L['page.title']) {
+    document.title = L['page.title'];
+    const ogT = document.querySelector('meta[property="og:title"]');
+    if (ogT) ogT.setAttribute('content', L['page.title']);
+  }
+  if (L['page.description']) {
+    const md = document.querySelector('meta[name="description"]');
+    if (md) md.setAttribute('content', L['page.description']);
+    const ogD = document.querySelector('meta[property="og:description"]');
+    if (ogD) ogD.setAttribute('content', L['page.description']);
+  }
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.getAttribute('data-i18n'); if (L[k] != null) el.textContent = L[k];
   });
@@ -576,7 +595,9 @@ window.applyI18n = function(lang){
   document.querySelectorAll('.lang-btn').forEach(b => {
     const on = b.getAttribute('data-lang') === lang;
     b.style.background = on ? 'linear-gradient(135deg,#a78bfa,#22d3ee)' : 'transparent';
-    b.style.color = on ? '#0a0a0f' : '';
+    b.style.color = on ? '#0a0a0f' : 'var(--ink-soft)';
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
 };
 window.setLang = function(lang){
@@ -1305,10 +1326,20 @@ document.addEventListener('DOMContentLoaded', function(){
   setMode('free');
 
   async function init(){
-    const r=await fetch('/api/credits',{headers:accessHeaders()});
-    if(r.status===401){showAccessGate();return}
     const saved=localStorage.getItem('multi_user_email');
-    if(saved){startApp(saved)}else{$('gate').style.display='block'}
+    if(saved){
+      // Real user — pass their email so /api/credits does not respond 400.
+      try{
+        const r=await fetch('/api/credits?user='+encodeURIComponent(saved),{headers:accessHeaders()});
+        if(r.status===401){showAccessGate();return}
+      }catch(_){/* offline is fine */}
+      startApp(saved);
+    }else{
+      // No email yet — skip the credits ping (it would 400 without ?user).
+      // If the site requires an access code, the gate opens on the first
+      // authenticated action (login / chat) via the same 401 branch.
+      $('gate').style.display='block';
+    }
   }
   init();
 
