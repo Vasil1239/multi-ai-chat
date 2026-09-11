@@ -158,7 +158,7 @@ window.ASKHUB_I18N = {
     'c.sb.new_chat':'＋ Чат','c.sb.projects':'Проекты','c.sb.chats':'Чаты в проекте',
     'c.sb.credits_short':'кред','c.sb.topup':'Пополнить','c.sb.logout':'Выйти',
     'c.head.new':'Новый чат',
-    'c.mode.free':'Бесплатно','c.mode.paid':'Платно','c.mode.image':'Картинка',
+    'c.mode.free':'Бесплатно','c.mode.paid':'Платно','c.mode.image':'Картинка','c.mode.video':'🎬 Видео',
     'c.img.standard':'Стандарт','c.img.cr':'кр',
     'c.empty.title':'Чем помочь?','c.empty.sub':'Выберите модель и задайте вопрос — или начните с одного из готовых сценариев.',
     'c.composer.ph':'Спросите что угодно…','c.composer.ph_img':'Опишите картинку…',
@@ -171,7 +171,7 @@ window.ASKHUB_I18N = {
     'c.sb.new_chat':'＋ Chat','c.sb.projects':'Projects','c.sb.chats':'Chats in project',
     'c.sb.credits_short':'cr','c.sb.topup':'Top up','c.sb.logout':'Log out',
     'c.head.new':'New chat',
-    'c.mode.free':'Free','c.mode.paid':'Paid','c.mode.image':'Image',
+    'c.mode.free':'Free','c.mode.paid':'Paid','c.mode.image':'Image','c.mode.video':'🎬 Video',
     'c.img.standard':'Standard','c.img.cr':'cr',
     'c.empty.title':'How can I help?','c.empty.sub':'Pick a model and ask a question — or start with one of the ready-made prompts.',
     'c.composer.ph':'Ask anything…','c.composer.ph_img':'Describe the image…',
@@ -184,7 +184,7 @@ window.ASKHUB_I18N = {
     'c.sb.new_chat':'＋ Chat','c.sb.projects':'Projekti','c.sb.chats':'Razgovori u projektu',
     'c.sb.credits_short':'kr','c.sb.topup':'Dopuni','c.sb.logout':'Odjava',
     'c.head.new':'Novi razgovor',
-    'c.mode.free':'Besplatno','c.mode.paid':'Plaćeno','c.mode.image':'Slika',
+    'c.mode.free':'Besplatno','c.mode.paid':'Plaćeno','c.mode.image':'Slika','c.mode.video':'🎬 Video',
     'c.img.standard':'Standard','c.img.cr':'kr',
     'c.empty.title':'Kako mogu da pomognem?','c.empty.sub':'Izaberite model i postavite pitanje — ili krenite od gotovog primera.',
     'c.composer.ph':'Pitajte bilo šta…','c.composer.ph_img':'Opišite sliku…',
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
-      <div class="brand"><span class="brand-mark"></span><span>AskHub</span></div>
+      <a href="/" class="brand" style="text-decoration:none;color:inherit" title="На главную"><span class="brand-mark"></span><span>AskHub</span></a>
       <button class="new-btn" id="new-chat-btn" title="Новый чат" data-i18n="c.sb.new_chat">＋ Чат</button>
     </div>
 
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="main">
     <div class="mobile-topbar">
       <button class="hamb" id="hamb">☰</button>
-      <div class="brand" style="flex:1"><span class="brand-mark"></span><span>AskHub</span></div>
+      <a href="/" class="brand" style="flex:1;text-decoration:none;color:inherit" title="На главную"><span class="brand-mark"></span><span>AskHub</span></a>
       <button class="new-btn" id="new-chat-btn-mob">＋</button>
     </div>
 
@@ -316,6 +316,7 @@ document.addEventListener('DOMContentLoaded', function(){
           <button class="active" data-mode="free" id="tab-free" data-i18n="c.mode.free">Бесплатно</button>
           <button data-mode="paid" id="tab-paid" data-i18n="c.mode.paid">Платно</button>
           <button data-mode="image" id="tab-image" data-i18n="c.mode.image">Картинка</button>
+          <button data-mode="video" id="tab-video" data-i18n="c.mode.video">🎬 Видео</button>
           <!-- вкладка "🔎 Поиск" (собственный Tavily-оркестратор) скрыта до оплаты Tavily API. Когда ключ будет — вернуть одной строкой:
           <button data-mode="search" id="tab-search">🔎 Поиск</button> -->
         </div>
@@ -325,6 +326,16 @@ document.addEventListener('DOMContentLoaded', function(){
         <label><input type="radio" name="imgq" value="standard" checked> <span data-i18n="c.img.standard">Стандарт</span> · 65 <span data-i18n="c.img.cr">кр</span></label>
         <label><input type="radio" name="imgq" value="hd"> HD · 150 <span data-i18n="c.img.cr">кр</span></label>
         <label><input type="radio" name="imgq" value="ultra"> Ultra · 300 <span data-i18n="c.img.cr">кр</span></label>
+      </div>
+      <div class="img-quality" id="video-quality" style="flex-direction:column;align-items:flex-start;gap:6px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          <label><input type="radio" name="vidq" value="basic" checked> Слайдшоу · 2–10 фото · 200 кр</label>
+          <label><input type="radio" name="vidq" value="ai"> AI оживление · 5 сек · 800 кр</label>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="file" id="video-photos" accept="image/*" multiple style="font-size:12px">
+          <span style="color:var(--ink-mute);font-size:11.5px">Слайдшоу: 2–10 фото. AI: 1 фото + текст в поле чата.</span>
+        </div>
       </div>
     </div>
 
@@ -578,9 +589,13 @@ function renderMsg(m) {
   const cls = 'msg ' + m.role + (m.error ? ' error' : '');
   let content = '';
   if (m.imageSrc) content = `<img src="${m.imageSrc}" alt="картинка">`;
+  else if (m.videoSrc) content = `<video src="${m.videoSrc}" controls playsinline style="max-width:100%;border-radius:14px;background:#000"></video>`;
   else content = esc(m.content || '');
   if (m.imageSrc) {
     content += `<div class="img-actions"><a href="${m.imageSrc}" download="askhub-image.png">↓ Скачать</a><a href="${m.imageSrc}" target="_blank" rel="noopener">⇱ Открыть</a></div>`;
+  }
+  if (m.videoSrc) {
+    content += `<div class="img-actions"><a href="${m.videoSrc}" download="askhub-video.mp4">↓ Скачать</a><a href="${m.videoSrc}" target="_blank" rel="noopener">⇱ Открыть</a></div>`;
   }
   const meta = m.role !== 'user' ? `<div class="msg-meta">${esc(m.modelLabel || (m.role==='assistant' ? 'AI' : 'Система'))}</div>` : '';
   return `<div class="${cls}"><div class="msg-avatar">${esc(avatar)}</div><div class="msg-body">${meta}<div class="msg-content">${content}</div></div></div>`;
@@ -589,7 +604,7 @@ function renderMsg(m) {
 // ============ Head: mode & model ============
 function populateModelSelect() {
   const sel = $('model-select'); sel.innerHTML = '';
-  if (state.mode === 'image') { sel.style.display='none'; return; }
+  if (state.mode === 'image' || state.mode === 'video') { sel.style.display='none'; return; }
   sel.style.display = '';
   const opts = (state.mode === 'paid' || state.mode === 'search') ? MODELS.paid : MODELS.free;
   opts.forEach(m => {
@@ -604,11 +619,12 @@ function populateModelSelect() {
 }
 function setMode(m) {
   state.mode = m;
-  ['free','paid','search','image'].forEach(x => { const el = $('tab-'+x); if (el) el.classList.toggle('active', x===m); });
+  ['free','paid','search','image','video'].forEach(x => { const el = $('tab-'+x); if (el) el.classList.toggle('active', x===m); });
   $('img-quality').classList.toggle('show', m==='image');
+  const vq = $('video-quality'); if (vq) vq.classList.toggle('show', m==='video');
   $('input').placeholder = (m==='search') ? 'Спросите что-нибудь с поиском в интернете…'
-    : (m==='image')
-    ? 'Опишите картинку: «Инфографика о ремонте, плоская иллюстрация…»'
+    : (m==='image') ? 'Опишите картинку: «Инфографика о ремонте, плоская иллюстрация…»'
+    : (m==='video') ? 'Опишите видео (для AI-оживления). Для слайдшоу текст не обязателен.'
     : 'Спросите что угодно…';
   populateModelSelect();
   updateHead();
@@ -616,6 +632,7 @@ function setMode(m) {
 $('tab-free').onclick   = () => setMode('free');
 $('tab-paid').onclick   = () => setMode('paid');
 $('tab-image').onclick  = () => setMode('image');
+if ($('tab-video')) $('tab-video').onclick = () => setMode('video');
 if ($('tab-search')) $('tab-search').onclick = () => setMode('search');
 $('model-select').onchange = (e) => {
   const opts = (state.mode === 'paid' || state.mode === 'search') ? MODELS.paid : MODELS.free;
@@ -664,6 +681,7 @@ async function send() {
   typing.className = 'typing'; typing.id='typing-tmp';
   typing.textContent =
     (state.mode === 'image')  ? 'Генерирую изображение (10–40 сек)…' :
+    (state.mode === 'video')  ? 'Собираю видео (15–25 сек)…' :
     (state.mode === 'search') ? 'Ищу в интернете и готовлю ответ…' :
     'Модель отвечает…';
   wrap.appendChild(typing);
@@ -671,7 +689,7 @@ async function send() {
 
   try {
     if (state.mode === 'search') {
-      const apiMsgs = chat.messages.filter(m => !m.error && !m.imageSrc).map(m => ({role:m.role, content:m.content}));
+      const apiMsgs = chat.messages.filter(m => !m.error && !m.imageSrc && !m.videoSrc).map(m => ({role:m.role, content:m.content}));
       const r = await fetch('/api/search', {
         method:'POST', headers: accessHeaders({'Content-Type':'application/json'}),
         body: JSON.stringify({ user: state.userEmail, model: state.activeModel.id, query: t, messages: apiMsgs })
@@ -690,6 +708,30 @@ async function send() {
           content: d.answer || '(пустой ответ)',
           modelLabel: state.activeModel.label + ' + интернет · −' + (d.creditsCharged||0) + ' кред'
         });
+        if (typeof d.credits === 'number') { state.credits = d.credits; updateCreditsPill(); }
+      }
+    } else if (state.mode === 'video') {
+      const tier = (document.querySelector('input[name=vidq]:checked')||{}).value || 'basic';
+      const fileInput = $('video-photos');
+      const files = fileInput ? Array.from(fileInput.files||[]) : [];
+      const photosB64 = [];
+      for (const f of files.slice(0, 10)) {
+        const b64 = await new Promise((res, rej) => { const rd = new FileReader(); rd.onload = () => res(String(rd.result).split(',')[1]||''); rd.onerror = rej; rd.readAsDataURL(f); });
+        photosB64.push(b64);
+      }
+      const body = { user: state.userEmail, tier, prompt: t, photosB64 };
+      const r = await fetch('/api/video', {
+        method:'POST', headers: accessHeaders({'Content-Type':'application/json'}),
+        body: JSON.stringify(body)
+      });
+      const d = await readJsonSafe(r);
+      if (r.status === 401) { showGate(); chat.messages.pop(); }
+      else if (r.status === 402) chat.messages.push({role:'assistant',content:d.message||'Кредитов недостаточно',modelLabel:'Система',error:true});
+      else if (!r.ok) throw new Error(d.error || ('HTTP '+r.status));
+      else {
+        const src = d.videoUrl ? d.videoUrl : (d.videoB64 ? ('data:video/mp4;base64,'+d.videoB64) : null);
+        if (!src) throw new Error('Провайдер не вернул видео');
+        chat.messages.push({ role:'assistant', content:'', videoSrc:src, modelLabel:(d.provider||'video')+' · −'+(d.creditsCharged||0)+' кред' });
         if (typeof d.credits === 'number') { state.credits = d.credits; updateCreditsPill(); }
       }
     } else if (state.mode === 'image') {
@@ -711,7 +753,7 @@ async function send() {
         if (typeof d.credits === 'number') { state.credits = d.credits; updateCreditsPill(); }
       }
     } else {
-      const apiMsgs = chat.messages.filter(m => !m.error && !m.imageSrc).map(m => ({role:m.role, content:m.content}));
+      const apiMsgs = chat.messages.filter(m => !m.error && !m.imageSrc && !m.videoSrc).map(m => ({role:m.role, content:m.content}));
       const r = await fetch('/api/chat', {
         method:'POST', headers: accessHeaders({'Content-Type':'application/json'}),
         body: JSON.stringify({ user: state.userEmail, model: state.activeModel.id, messages: apiMsgs })
