@@ -77,6 +77,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/checkout-lemonsqueezy"
+  to = "/.netlify/functions/checkout-lemonsqueezy"
+  status = 200
+
+[[redirects]]
+  from = "/api/webhook-lemonsqueezy"
+  to = "/.netlify/functions/webhook-lemonsqueezy"
+  status = 200
+
+[[redirects]]
   from = "/api/admin-stats"
   to = "/.netlify/functions/admin-stats"
   status = 200
